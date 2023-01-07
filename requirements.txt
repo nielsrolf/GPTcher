@@ -1,0 +1,16 @@
+nltk
+openai
+pandas
+protobuf
+pyspellchecker
+python-dotenv
+python_telegram_bot
+six
+spacy
+spellchecker
+telegram
+google-cloud-translate
+Unidecode   
+python-Levenshtein
+replicate
+supabase-py

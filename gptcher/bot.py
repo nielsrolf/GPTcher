@@ -1,0 +1,88 @@
+"""
+We have a conversation flow that is defined by the states of the conversation.
+For each message, the user is loaded from the database, and the state of the conversation is loaded.
+The message is passed to the state, and the state responds to the message.
+While doing so, it can update the user or conversation state.
+
+Messages are connected to a session via the session ID.
+"""
+from gptcher.main import supabase, STATES, measure_time
+
+
+@measure_time
+def respond(user_id, message):
+    """Respond to a message from a user.
+
+    Loads the user history and the conversation state, and passes the message to the state.
+    
+    Args:
+        user_id: The ID of the user.
+        message: The message sent by the user.
+    
+    Returns:
+        A response to the message.
+    """
+    user = User(user_id)
+    response = user.state.respond(message)
+    print("123", response)
+    return response
+
+
+class User:
+    """A user of the bot.
+    
+    If the user is new, the user is created with the default state.
+    If the user already exists, the user is loaded from the database.
+    """
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.language = None
+        self.state = None
+        self._load_state()
+    
+    def _load_state(self):
+        """Load the state of the user from the database.
+        
+        If the user is new, the default state is returned.
+        """
+        user_db = supabase.table("users").upsert({"user_id": self.user_id}).execute().data[0]
+        self.language = user_db["language"]
+        # Get the session from the database or create a new one if the user is new
+        if user_db["session"] is None:
+            session_response = supabase.table("session").insert({"user_id": self.user_id}).execute()
+        else:
+            session_response = supabase.table("session").select("*").eq("id", user_db["session"]).execute()
+        session = session_response.data[0]
+        self.state = STATES[session['type']](self, session['id'])
+    
+    def set_state(self, state):
+        """Set the state of the user.
+        
+        Args:
+            state: The state to set.
+        """
+        self.state = state
+        supabase.table("session").upsert({
+            "id": state.session,
+            "type": state.__class__.__name__,
+            "user_id": self.user_id
+        }).execute()
+        supabase.table("users").update({"session": self.state.session}).eq("user_id", self.user_id).execute()
+        return 
+
+
+async def test_new_user():
+    """Test the bot with a new user."""
+    user = User("test_user4")
+    # assert user.state.__class__.__name__ == "WelcomeUser"
+    print(user.state.__class__.__name__)
+    assert user.language == "es"
+    assert user.state.messages == []
+    start_msg = await user.state.start()
+    print(start_msg)
+
+
+if __name__ == "__main__":
+    # Test the bot
+    import asyncio
+    asyncio.run(test_new_user())
