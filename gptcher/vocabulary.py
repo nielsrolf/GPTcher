@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from dotenv import load_dotenv
-from spanish_tutor.main import measure_time
+from gptcher.main import measure_time, supabase
 
 load_dotenv()
 from google.cloud import translate_v2 as translate
@@ -100,7 +100,8 @@ memory usage: 12.7+ MB
 
 
 class Vocabulary:
-    def __init__(self, language):
+    def __init__(self, user, language):
+        self.user = user
         self.language = language
         self.words = {}
     
@@ -116,20 +117,20 @@ class Vocabulary:
         return word in self.words
     
     @staticmethod
-    def from_dict(data):
+    def from_list(user, data):
         """Create a vocabulary from a dict"""
-        words = [Word(**word) for word in data["words"]]
-        vocabulary = Vocabulary(data["language"])
+        words = [Word(**word) for word in data]
+        vocabulary = Vocabulary(user, user.language)
         vocabulary.words = {word.word_en: word for word in words}
         return vocabulary
     
     def to_dict(self):
         """Convert the vocabulary to a dict"""
-        return {
-            "language": self.language,
-            "words": [word.__dict__ for word in self.words.values()],
-        }
-
+        return [word.__dict__ for word in self.words.values()]
+    
+    def to_db(self):
+        """Save the db to supabase"""
+        supabase.table("users").update({"words": self.to_dict()}).eq("user_id", self.user.user_id).execute()
 
     def usage_percent_of_english_language(self):
         """Can tell you 'with this dataset, you understand 85% of the words used in the English language'"""

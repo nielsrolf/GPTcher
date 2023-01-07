@@ -7,10 +7,11 @@ While doing so, it can update the user or conversation state.
 Messages are connected to a session via the session ID.
 """
 from gptcher.main import supabase, STATES, measure_time
+from gptcher.vocabulary import Vocabulary
 
 
-@measure_time
-def respond(user_id, message):
+# @measure_time
+async def respond(user_id, message, reply_func):
     """Respond to a message from a user.
 
     Loads the user history and the conversation state, and passes the message to the state.
@@ -22,10 +23,8 @@ def respond(user_id, message):
     Returns:
         A response to the message.
     """
-    user = User(user_id)
-    response = user.state.respond(message)
-    print("123", response)
-    return response
+    user = User(user_id, reply_func=reply_func)
+    await user.state.respond(message)
 
 
 class User:
@@ -34,10 +33,12 @@ class User:
     If the user is new, the user is created with the default state.
     If the user already exists, the user is loaded from the database.
     """
-    def __init__(self, user_id):
+    def __init__(self, user_id, reply_func):
         self.user_id = user_id
+        self.reply = reply_func
         self.language = None
         self.state = None
+        self.vocabulary = None
         self._load_state()
     
     def _load_state(self):
@@ -54,6 +55,7 @@ class User:
             session_response = supabase.table("session").select("*").eq("id", user_db["session"]).execute()
         session = session_response.data[0]
         self.state = STATES[session['type']](self, session['id'])
+        self.vocabulary = Vocabulary.from_list(self, user_db["words"])
     
     def set_state(self, state):
         """Set the state of the user.
@@ -68,7 +70,6 @@ class User:
             "user_id": self.user_id
         }).execute()
         supabase.table("users").update({"session": self.state.session}).eq("user_id", self.user_id).execute()
-        return 
 
 
 async def test_new_user():

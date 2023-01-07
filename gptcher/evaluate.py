@@ -5,12 +5,8 @@ from dotenv import load_dotenv
 from unidecode import unidecode
 import Levenshtein
 
-
-from gptcher.main import MixedLanguageMessage
-from gptcher.vocabulary import Vocabulary
-
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY_BLA")
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 template = """In this task, you evaluate a Spanish student. The student writes a message in imperfect Spanish or English or a mixture of both. You translate this to perfect English, and perfect Spanish, and then list the vocabulary used.
@@ -35,16 +31,16 @@ Example:
 
 
 # @measure_time
-async def evaluate(message):
+async def evaluate(message, vocabulary, context=None):
     response = None
     try:
-        prompt = template(message)
+        prompt = template(message.text)
 
         prefix = ""
-        # if context is not None:
-        #     if "english" in context:
-        #         prefix = " " + context["english"] + "\n>> Translated:"
-        #         prompt += prefix
+        if context is not None:
+            if "english" in context:
+                prefix = " " + context["english"] + "\n>> Translated:"
+                prompt += prefix
         
         response = openai.Completion.create(
             model="text-davinci-003",
@@ -80,12 +76,13 @@ async def evaluate(message):
             if word_en not in vocabulary:
                 vocabulary.add_wordpair(word_en, translation)
             vocabulary[word_en].register_score(score, translation)
-        return MixedLanguageMessage(message, "Student", english, translated, vocabulary.language)
+        vocabulary.to_db()
+        return #MixedLanguageMessage(message, "Student", english, translated, vocabulary.language)
     except Exception as e:
         print("Error:", e)
         print("Response:", response)
-        print("Prompt:", message)
-        return MixedLanguageMessage(message, "Student", None, None, vocabulary.language)
+        print("Prompt:", message.text)
+        return #MixedLanguageMessage(message, "Student", None, None, vocabulary.language)
 
 
 

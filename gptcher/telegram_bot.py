@@ -28,10 +28,12 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
+    await update.message.reply_text(f"Hello {update.effective_user.first_name}")
+
     import time
 
     time.sleep(4)
-    await update.message.reply_text(f"Hello {update.effective_user.first_name}")
+    await update.message.reply_text(f"wazzzuuuup")
 
 
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -42,13 +44,15 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_msg = f"{update.effective_user.first_name}: {update.message.text}\n"
     print(user_msg)
 
-    response = bot.respond(
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
+    await bot.respond(
         str(update.effective_chat.id),
-        update.message.text
-    ) 
-    print(f"AI: {response}\n")
-    print_times()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=response)
+        update.message.text,
+        reply_func=reply_func
+    )
 
 
 async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,14 +73,13 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = bot.User(str(update.effective_chat.id))
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
     new_conversation = ConversationState(user)
-    response = new_conversation.start()
+    await new_conversation.start()
     user.set_state(new_conversation)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=response,
-    )
 
 
 if __name__ == "__main__":
