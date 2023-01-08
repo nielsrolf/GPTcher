@@ -1,10 +1,11 @@
 import os
-from gptcher.utils import complete
 
+import Levenshtein
 import openai
 from dotenv import load_dotenv
 from unidecode import unidecode
-import Levenshtein
+
+from gptcher.utils import complete
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -42,13 +43,15 @@ async def evaluate(message, vocabulary, context=None):
             if "english" in context:
                 prefix = " " + context["english"] + "\n>> Translated:"
                 prompt += prefix
-        
+
         response = complete(prompt, stop=["\n\n", ">> Original:"])
         print(prompt + response)
         response = prefix + response
         # Extract Enflish and Translated
         english = response.split("\n>> Translated:")[0].strip()
-        translated, word_scores = response.split("\n>> Translated:")[1].split("\n>> Vocabulary")
+        translated, word_scores = response.split("\n>> Translated:")[1].split(
+            "\n>> Vocabulary"
+        )
         translated = translated.strip()
         word_scores = word_scores.strip()
         if not word_scores.startswith("-"):
@@ -68,20 +71,19 @@ async def evaluate(message, vocabulary, context=None):
                 vocabulary.add_wordpair(word_en, translation)
             vocabulary[word_en].register_score(score, translation)
         vocabulary.to_db()
-        return #MixedLanguageMessage(message, "Student", english, translated, vocabulary.language)
+        return  # MixedLanguageMessage(message, "Student", english, translated, vocabulary.language)
     except Exception as e:
         print("Error:", e)
         print("Response:", response)
         print("Prompt:", message.text)
-        return #MixedLanguageMessage(message, "Student", None, None, vocabulary.language)
-
+        return  # MixedLanguageMessage(message, "Student", None, None, vocabulary.language)
 
 
 def normalize_string(s):
     # Replace special characters and remove non-ASCII characters
     s = unidecode(s)
     # Remove any remaining non-alphanumeric characters
-    s = ''.join(c for c in s if c.isalnum() or c == ' ')
+    s = "".join(c for c in s if c.isalnum() or c == " ")
     return s.lower().strip()
 
 

@@ -1,16 +1,12 @@
 import os
+
 import pandas as pd
 from dotenv import load_dotenv
+
 from gptcher.utils import measure_time, supabase
 
-load_dotenv()
+load_dotenv(override=True)
 from google.cloud import translate_v2 as translate
-
-os.environ[
-    "GOOGLE_APPLICATION_CREDENTIALS"
-] = "secrets/language-tutor-373214-e7cb7e367870.json"
-
-
 
 
 @measure_time
@@ -29,7 +25,16 @@ def translate_text(target, text):
 
 
 class Word:
-    def __init__(self, word_en, target_language, word_translations, to_learn, score=0, showed=0, percentage=None):
+    def __init__(
+        self,
+        word_en,
+        target_language,
+        word_translations,
+        to_learn,
+        score=0,
+        showed=0,
+        percentage=None,
+    ):
         self.word_en = word_en.lower()
         if not isinstance(word_translations, list):
             word_translations = [word_translations]
@@ -48,11 +53,11 @@ class Word:
                 self.percentage = 0
         else:
             self.percentage = percentage
-    
+
     @property
     def word_translated(self):
         return " / ".join(self.word_translations)
-    
+
     @staticmethod
     def from_word(word_en, target_language, to_learn=False):
         word_translated = translate_text(target_language, word_en)
@@ -61,13 +66,13 @@ class Word:
     @staticmethod
     def from_wordpair(word_en, word_translated, target_language, to_learn=False):
         return Word(word_en, target_language, word_translated, to_learn)
-    
+
     def register_score(self, score, translation):
         self.score += score
         self.showed += 1
         if translation not in self.word_translations:
             self.word_translations.append(translation)
-    
+
     @property
     def points(self):
         """
@@ -104,18 +109,18 @@ class Vocabulary:
         self.user = user
         self.language = language
         self.words = {}
-    
+
     def __getitem__(self, word):
         if not self.words.get(word):
             self.words[word] = Word.from_word(word, self.language)
         return self.words[word]
-    
+
     def __setitem__(self, word, value):
         self.words[word] = value
-    
+
     def __contains__(self, word):
         return word in self.words
-    
+
     @staticmethod
     def from_list(user, data):
         """Create a vocabulary from a dict"""
@@ -123,14 +128,16 @@ class Vocabulary:
         vocabulary = Vocabulary(user, user.language)
         vocabulary.words = {word.word_en: word for word in words}
         return vocabulary
-    
+
     def to_dict(self):
         """Convert the vocabulary to a dict"""
         return [word.__dict__ for word in self.words.values()]
-    
+
     def to_db(self):
         """Save the db to supabase"""
-        supabase.table("users").update({"words": self.to_dict()}).eq("user_id", self.user.user_id).execute()
+        supabase.table("users").update({"words": self.to_dict()}).eq(
+            "user_id", self.user.user_id
+        ).execute()
 
     def usage_percent_of_english_language(self):
         """Can tell you 'with this dataset, you understand 85% of the words used in the English language'"""
@@ -152,7 +159,7 @@ class Vocabulary:
             word = words.iloc[i]["word"]
             # Add the word to the passive vocabulary with a count of 1
             self[word].showed = max(1, self[word].showed)
-    
+
     def add_wordpair(self, word_en, translation):
         """Add a word pair to the vocabulary"""
         self[word_en] = Word.from_wordpair(word_en, translation, self.language)
@@ -167,13 +174,13 @@ class Vocabulary:
         # Return the words and their translation
         vocab = Vocabulary(self.user, self.language)
         for word in words:
-            vocab[word.word_en] = word 
+            vocab[word.word_en] = word
         return vocab
 
     def __str__(self):
         return "\n".join([str(word) for word in self.words.values()])
-    
+
     @property
     def score(self):
         print("Score: ", {str(word): word.score for word in self.words.values()})
-        return round(sum([word.points for word in self.words.values()]) * 10 ) / 10
+        return round(sum([word.points for word in self.words.values()]) * 10) / 10

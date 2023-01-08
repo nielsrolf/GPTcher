@@ -1,7 +1,5 @@
 import os
 
-from gptcher import bot
-from gptcher.main import ConversationState, VocabTrainingState
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import ChatAction
@@ -13,6 +11,8 @@ from telegram.ext import (
     filters,
 )
 
+from gptcher import bot
+from gptcher.main import ConversationState, VocabTrainingState
 
 load_dotenv(override=True)
 is_prod = os.getenv("IS_PROD") == "True"
@@ -49,9 +49,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
     await bot.respond(
-        str(update.effective_chat.id),
-        update.message.text,
-        reply_func=reply_func
+        str(update.effective_chat.id), update.message.text, reply_func=reply_func
     )
 
 
@@ -62,22 +60,22 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-
 async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def reply_func(text):
         print(f"Bot: {text}\n")
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
     user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
     await new_conversation.start()
     user.set_state(new_conversation)
 
 
-
 async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def reply_func(text):
         print(f"Bot: {text}\n")
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
     user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
     new_conversation = ConversationState(user)
     await new_conversation.start()
