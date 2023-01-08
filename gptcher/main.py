@@ -1,40 +1,13 @@
-from supabase import create_client
-import os
-from dotenv import load_dotenv
 import datetime as dt
 import uuid
-import openai
-from dotenv import load_dotenv
 from gptcher.evaluate import evaluate
+from gptcher.utils import complete, supabase
 
 import asyncio
 
-load_dotenv(override=True)
-openai.api_key = os.getenv("OPENAI_API_KEY")
-url = os.getenv("SUPABASE_URL")
-supabase_api_key = os.getenv("SUPABASE_API_KEY")
-supabase = create_client(url, supabase_api_key)
 
 
-time_in_functions = {}
-def measure_time(func):
-    def wrapper(*args, **kwargs):
-        import time
-        start = time.time()
-        result = func(*args, **kwargs)
-        end = time.time()
-        print(f"Time for {func.__name__}: {end - start}")
-        if func.__name__ not in time_in_functions:
-            time_in_functions[func.__name__] = [end-start]
-        else:
-            time_in_functions[func.__name__].append(end-start)
-        return result
-    return wrapper
 
-
-def print_times():
-    for name, times in time_in_functions.items():
-        print(f"{name}: {len(times)} x {sum(times)/len(times)}")
 
 
 class MixedLanguageMessage:
@@ -64,6 +37,10 @@ class MixedLanguageMessage:
             "session": self.session
         }
         supabase.table("messages").insert(data).execute()
+
+
+
+
 
 
 class ConversationState():
@@ -156,17 +133,7 @@ class ConversationState(ConversationState):
         message = MixedLanguageMessage(text=message_raw, user_id=self.user.user_id, session=self.session)
         message.to_db()
         prompt = self.get_prompt()
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            temperature=0.7,
-            max_tokens=256,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=[">>"],
-        )
-        response = "Correct: " + response.choices[0].text.replace("Answer:", "\nAnswer:").strip()
+        response = complete(prompt, prefix="Correct:", stop=">>")
         await self.user.reply(response)
         response_msg = MixedLanguageMessage(response, sender="Teacher", session=self.session)
         # Save to database
@@ -215,13 +182,29 @@ class WelcomeUser(ConversationState):
         await self.start()
 
 
+vocab_init_message = """In this task, you are a Spanish tutor for a student. You make up a number of sentences that use (some) of the provided vocabulary, and the student has to translate them.
+
+The vocabulary for this session is:
+{}
+
+Here are ten English sentences that use the vocabulary:
+- 
+""".format
 class VocabTrainingState(ConversationState):
     """The state of the conversation flow when the user is training vocabulary.
     
     This state is entered when the user sends a message that starts with the command for training vocabulary.
     """
     async def start(self):
-        pass
+        breakpoint()
+        vocab_str = str(self.user.vocabulary.get_learn_list(15))
+        init_message = f"¡Aprendamos nuevas palabras! Echa un vistazo a la siguiente lista: {self.user.vocabulary.get_learn_list(30)}"
+        await self.user.reply(init_message)
+        prompt = vocab_init_message(vocab_str)
+        response = complete(prompt, prefix="", stop="</Teacher>")
+        await self.user.reply(response)
+        message = MixedLanguageMessage(init_message + "\n" + response, sender="Teacher", session=self.session)
+        message.to_db()
 
     async def respond(self, message_raw: str):
         """Respond to the message.
@@ -241,5 +224,3 @@ STATES = {
     state.__name__: state
     for state in states_list
 }
-
-

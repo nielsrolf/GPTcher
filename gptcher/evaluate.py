@@ -1,4 +1,5 @@
 import os
+from gptcher.utils import complete
 
 import openai
 from dotenv import load_dotenv
@@ -42,17 +43,7 @@ async def evaluate(message, vocabulary, context=None):
                 prefix = " " + context["english"] + "\n>> Translated:"
                 prompt += prefix
         
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            temperature=0.7,
-            max_tokens=256,
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-            stop=["\n\n", ">> Original:"],
-        )
-        response = response.choices[0].text
+        response = complete(prompt, stop=["\n\n", ">> Original:"])
         print(prompt + response)
         response = prefix + response
         # Extract Enflish and Translated

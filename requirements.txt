@@ -14,3 +14,4 @@ Unidecode
 python-Levenshtein
 replicate
 supabase-py
+deepl

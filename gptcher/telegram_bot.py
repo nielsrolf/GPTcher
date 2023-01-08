@@ -1,7 +1,7 @@
 import os
 
 from gptcher import bot
-from gptcher.main import ConversationState, print_times
+from gptcher.main import ConversationState, VocabTrainingState
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import ChatAction
@@ -63,12 +63,14 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-# async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     response = start_vocab_trainer(str(update.effective_chat.id))
-#     await context.bot.send_message(
-#         chat_id=update.effective_chat.id,
-#         text=response,
-#     )
+async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
+    new_conversation = VocabTrainingState(user)
+    await new_conversation.start()
+    user.set_state(new_conversation)
 
 
 
@@ -87,7 +89,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("start", respond))
     app.add_handler(CommandHandler("donate", donate))
-    # app.add_handler(CommandHandler("train", start_vocab))
+    app.add_handler(CommandHandler("train", start_vocab))
     app.add_handler(CommandHandler("converse", start_converse))
 
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)

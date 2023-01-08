@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from dotenv import load_dotenv
-from gptcher.main import measure_time, supabase
+from gptcher.utils import measure_time, supabase
 
 load_dotenv()
 from google.cloud import translate_v2 as translate
@@ -165,7 +165,7 @@ class Vocabulary:
         # Select the n words with the lowest score
         words = words[:n]
         # Return the words and their translation
-        vocab = Vocabulary(self.language)
+        vocab = Vocabulary(self.user, self.language)
         for word in words:
             vocab[word.word_en] = word 
         return vocab

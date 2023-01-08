@@ -6,7 +6,7 @@ While doing so, it can update the user or conversation state.
 
 Messages are connected to a session via the session ID.
 """
-from gptcher.main import supabase, STATES, measure_time
+from gptcher.main import supabase, STATES
 from gptcher.vocabulary import Vocabulary
 
 
