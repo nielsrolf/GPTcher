@@ -4,6 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from gptcher.utils import measure_time, supabase
+from gptcher.language_codes import code_of
 
 load_dotenv(override=True)
 from google.cloud import translate_v2 as translate
@@ -17,6 +18,8 @@ def translate_text(target, text):
     See https://g.co/cloud/translate/v2/translate-reference#supported_languages
     """
     print(f"Translating {text} to {target}...")
+    if len(target) < 4:
+        target = code_of[target]
     translate_client = translate.Client()
     # Text can also be a sequence of strings, in which case this method
     # will return a sequence of results for each text.

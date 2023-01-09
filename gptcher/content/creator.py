@@ -141,6 +141,7 @@ class Exercise:
     task_description: str
     id: str = None
     translation_tasks: List[TranslationTask] = None
+    user_id: str = None
 
     def __post_init__(self):
         if self.id:
@@ -167,6 +168,7 @@ class Exercise:
         task_description,
         vocabulary_en,
         sentences_en,
+        user_id=None
     ):
         translation_tasks = [
             TranslationTask.create(language, sentence) for sentence in sentences_en
@@ -178,6 +180,7 @@ class Exercise:
             grammar,
             exercise_number,
             task_description,
+            user_id=user_id,
         )
         exercise.translation_tasks = translation_tasks
         exercise.to_db()

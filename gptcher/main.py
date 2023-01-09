@@ -5,7 +5,7 @@ import uuid
 from gptcher.content.creator import Exercise, TranslationTask, load_all_exercises
 from gptcher.evaluate import almost_equal, evaluate
 from gptcher.language_codes import code_of
-from gptcher.utils import complete, supabase
+from gptcher.utils import complete, supabase, complete_and_parse_json
 
 
 class MixedLanguageMessage:
@@ -87,7 +87,7 @@ class ConversationState:
         raise NotImplementedError()
 
 
-conversation_state_prompt = """You are GPTcher, a <language> tutor bot. You teach <language> to a student by having a conversation with them.
+conversation_state_prompt = """You are GPTcher, a funny <language> tutor bot. You teach <language> to a student by having a conversation with them.
 
 Your student sends a message in broken <language> or English (or a mixture of both), and you first correct the student's message to be in perfect <language>, and then respond like a normal conversation partner. You keep the conversation going by asking interesting questions, or prompting the user to talk about a topic. Don't be boring, don't ask the same questions multiple times. 
 The complete format is:
@@ -129,7 +129,7 @@ class ConversationState(ConversationState):
         prompt = prompt.replace("<language>", self.user.language)
         for message in self.messages:
             prompt += f">> {message.sender}: {message.text}\n"
-        prompt += ">> Teacher: Correct:"
+        prompt += ">> Teacher: "
 
         print("-" * 80)
         print(prompt)
@@ -165,7 +165,7 @@ Send me a message in English or Spanish or a mixture of both and I'll correct it
 
 By using correct words you improve your score. You can see your score with /score.
 
-You can also start a vocabulary trainer with /train.
+You can also start one of many exercises with /train or train the words you know with /vocab.
 
 Don't send private information to me - your messages are sent to other APIs.
 
@@ -187,8 +187,7 @@ class WelcomeUser(ConversationState):
         """
         self.user.reply(welcome_message)
         new_conversation = ConversationState(self.user)
-        await new_conversation.start()
-        self.user.set_state(new_conversation)
+        await self.user.enter_state(new_conversation)
 
     async def respond(self, message_raw: str):
         """Respond to the message.
@@ -202,34 +201,56 @@ class WelcomeUser(ConversationState):
         await self.start()
 
 
-vocab_init_message = """In this task, you are a Spanish tutor for a student. You make up a number of sentences that use (some) of the provided vocabulary, and the student has to translate them.
+vocab_init_message = """In this task, you are a <language> tutor for a student. You make up a number of sentences that use (some) of the provided vocabulary, and the student has to translate them.
 
 The vocabulary for this session is:
 {}
+You may also use other words if necessary for the sentence to make sense.
 
-Here are ten English sentences that use the vocabulary:
-- 
+Give the response as a JSON list of 5 sentences, where each sentence is a dictionary with the following keys:
+- "id": an enumeration of the sentences, starting at 1
+- "english": The English content
+- "<language>": The translated content
+The output must be complete and valid JSON, with exactly 5 sentence objects.
+
+Output:
 """.format
+
+vocab_init_prefix = '''
+[
+    {
+        "id": 1,
+        "english": "'''
 
 
 class VocabTrainingState(ConversationState):
-    """The state of the conversation flow when the user is training vocabulary.
-
-    This state is entered when the user sends a message that starts with the command for training vocabulary.
+    """Creates an exercise from the vocabulary and starts it.
     """
 
     async def start(self):
-        breakpoint()
-        vocab_str = str(self.user.vocabulary.get_learn_list(15))
-        init_message = f"¡Aprendamos nuevas palabras! Echa un vistazo a la siguiente lista: {self.user.vocabulary.get_learn_list(30)}"
-        await self.user.reply(init_message)
-        prompt = vocab_init_message(vocab_str)
-        response = complete(prompt, prefix="", stop="</Teacher>")
-        await self.user.reply(response)
-        message = MixedLanguageMessage(
-            init_message + "\n" + response, sender="Teacher", session=self.session
-        )
-        message.to_db()
+        await self.user.reply("Creating an exercise for you...")
+        vocab_str = str(self.user.vocabulary.get_learn_list(5))
+        exercise = self.create_exercise(vocab_str)
+        session = ExerciseState(self.user, context={"exercise_id": exercise.id})
+        await self.user.enter_state(session)
+    
+    def create_exercise(self, vocab_str):
+        task_description = f"¡Aprendamos nuevas palabras! Echa un vistazo a la siguiente lista: \n{vocab_str}"
+        prompt = vocab_init_message(vocab_str).replace("<language>", self.user.language)
+        tasks = complete_and_parse_json(prompt, prefix=vocab_init_prefix, stop=["\n\n", "..."], max_tokens=1000)
+        sentences_en = [task['english'] for task in tasks]
+        num_vocab_trainings = 0
+        exercise = Exercise.create(
+            self.user.language,
+            "Vocabulary training",
+            "Sentences with words the student learns",
+            None,
+            num_vocab_trainings,
+            task_description,
+            None,
+            sentences_en,
+            user_id=self.user.user_id)
+        return exercise
 
     async def respond(self, message_raw: str):
         """Respond to the message.
@@ -240,8 +261,8 @@ class VocabTrainingState(ConversationState):
         Returns:
             A response to the message.
         """
-        # Implement this
-        pass
+        breakpoint()
+        await self.start()
 
 
 class ExerciseState:
@@ -299,8 +320,7 @@ class ExerciseState:
             ]
         ).execute()
         new_conversation = ConversationState(self.user)
-        await new_conversation.start()
-        self.user.set_state(new_conversation)
+        await self.user.enter_state(new_conversation)
         return
 
     async def respond(self, message_raw: str):
@@ -352,7 +372,6 @@ def deduplicate(seq, idfun=None):
     seen_add = seen.add
     return [x for x in seq if not (idfun(x) in seen or seen_add(idfun(x)))]
 
-
 class ExerciseSelectState(ConversationState):
     """Flow:
     User: /select
@@ -373,11 +392,12 @@ class ExerciseSelectState(ConversationState):
         super().__init__(user, session, context)
 
     async def start(self):
-        language = code_of[self.user.language].split(";")[0]
+        language = self.user.language
         exercises = (
             supabase.table("exercises")
             .select("*")
             .eq("language", language)
+            .is_("user_id", 'null')
             .execute()
             .data
         )
@@ -409,6 +429,8 @@ class ExerciseSelectState(ConversationState):
     async def reply_with_exercises(self):
         show = ""
         for i in range(self.context["show_min"], self.context["show_max"] + 1):
+            if str(i) not in self.context["available"]:
+                break
             exercise = Exercise.from_db(self.context["available"][str(i)]["id"])
             show += f"{i}: {exercise.topic} ({exercise.exercise_number})\n"
         if show == "":
@@ -438,8 +460,7 @@ class ExerciseSelectState(ConversationState):
                 exercise_state = ExerciseState(
                     self.user, self.session, {"exercise_id": exercise.id}
                 )
-                await exercise_state.start()
-                self.user.set_state(exercise_state)
+                await self.user.enter_state(exercise_state)
                 return
             else:
                 await self.user.reply(

@@ -39,7 +39,7 @@ def print_times():
 
 
 def complete_without_hash(prompt, stop, max_tokens=256):
-    print("Prompt:\n\n", prompt, "\n\nStop:\n\n", stop, "\n\n")
+    print("Prompt:\n\n", prompt, "\n\nStop:", stop, "max tokens", max_tokens, "\n\n")
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,
@@ -51,6 +51,7 @@ def complete_without_hash(prompt, stop, max_tokens=256):
         stop=stop,
     )
     response = response.choices[0].text
+    print("Response:\n\n", response, "\n\n")
     return response
 
 
@@ -91,13 +92,18 @@ def complete(prompt, stop, prefix="", max_tokens=256, override=False):
 def complete_and_parse_json(prompt, stop, prefix="", max_tokens=256):
     override = False
     for attempt in range(3):
-        response = complete(prompt, stop, prefix, max_tokens, override)
+        response = complete(prompt, stop, prefix, max_tokens, override).strip()
         for i in range(10):
-            print("...", response)
             try:
                 data = json.loads(response)
                 return data
             except json.decoder.JSONDecodeError:
-                response = complete(prompt, stop, response, max_tokens)
+                new_response = complete(prompt, stop, response, max_tokens)
+                if new_response == response:
+                    # check if we need to append a ','
+                    if response.count("[") > response.count("]") and response[-1] == "}":
+                        response += ","
+                else:
+                    response = new_response
         override = True
     breakpoint()

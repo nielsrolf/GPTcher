@@ -37,8 +37,7 @@ async def start_exercise(user_id, reply_func):
     new_conversation = ExerciseSelectState(
         user,
     )
-    await new_conversation.start()
-    user.set_state(new_conversation)
+    await user.enter_state(new_conversation)
 
 
 class User:
@@ -81,13 +80,14 @@ class User:
         self.state = STATES[session["type"]](self, session["id"], session["context"])
         self.vocabulary = Vocabulary.from_list(self, user_db["words"])
 
-    def set_state(self, state):
+    async def enter_state(self, state):
         """Set the state of the user.
 
         Args:
             state: The state to set.
         """
         self.state = state
+        await state.start()
         supabase.table("session").upsert(
             {
                 "id": state.session,

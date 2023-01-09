@@ -40,11 +40,11 @@ async def evaluate(message, vocabulary):
         prompt = template(message.text).replace("<language>", vocabulary.language)
         # TODO: transcribe if message.text is None and message.voice is not None
         prefix = ""
-        if message.sentence_en is not None:
-            prefix = " " + message.sentence_en + "\n>> Translated:"
+        if message.text_en is not None:
+            prefix = " " + message.text_en + "\n>> Translated:"
             prompt += prefix
-            if message.sentence_translated is not None:
-                prefix += message.sentence_translated + "\n>> Vocabulary:"
+            if message.text_translated is not None:
+                prefix += message.text_translated + "\n>> Vocabulary:"
 
         response = complete(prompt, stop=["\n\n", ">> Original:"])
         print(prompt + response)

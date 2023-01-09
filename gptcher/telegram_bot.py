@@ -67,8 +67,7 @@ async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
-    await new_conversation.start()
-    user.set_state(new_conversation)
+    await user.enter_state(new_conversation)
 
 
 async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -78,8 +77,7 @@ async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
     new_conversation = ConversationState(user)
-    await new_conversation.start()
-    user.set_state(new_conversation)
+    await user.enter_state(new_conversation)
 
 
 async def start_exercise_conversation(
@@ -98,6 +96,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", respond))
     app.add_handler(CommandHandler("donate", donate))
     app.add_handler(CommandHandler("train", start_exercise_conversation))
+    app.add_handler(CommandHandler("vocab", start_vocab))
     app.add_handler(CommandHandler("converse", start_converse))
 
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)
