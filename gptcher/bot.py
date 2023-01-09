@@ -6,7 +6,7 @@ While doing so, it can update the user or conversation state.
 
 Messages are connected to a session via the session ID.
 """
-from gptcher.main import STATES, supabase
+from gptcher.main import STATES, supabase, ExerciseState
 from gptcher.vocabulary import Vocabulary
 
 
@@ -25,6 +25,18 @@ async def respond(user_id, message, reply_func):
     """
     user = User(user_id, reply_func=reply_func)
     await user.state.respond(message)
+
+
+async def start_exercise(user_id, reply_func):
+    """Start an exercise.
+
+    Args:
+        user_id: The ID of the user.
+    """
+    user = User(user_id, reply_func=reply_func)
+    new_conversation = ExerciseState(user, context={'exercise_id': '419c7097-7946-4d7c-b38f-f823c813bd96'})
+    await new_conversation.start()
+    user.set_state(new_conversation)
 
 
 class User:
@@ -64,7 +76,7 @@ class User:
                 .execute()
             )
         session = session_response.data[0]
-        self.state = STATES[session["type"]](self, session["id"])
+        self.state = STATES[session["type"]](self, session["id"], session["context"])
         self.vocabulary = Vocabulary.from_list(self, user_db["words"])
 
     def set_state(self, state):
@@ -79,6 +91,7 @@ class User:
                 "id": state.session,
                 "type": state.__class__.__name__,
                 "user_id": self.user_id,
+                "context": state.context,
             }
         ).execute()
         supabase.table("users").update({"session": self.state.session}).eq(

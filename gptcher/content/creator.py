@@ -5,8 +5,10 @@ import json
 import os
 import re
 from dataclasses import dataclass
+from functools import cache
 from typing import List
 
+import click
 import deepl
 from dotenv import load_dotenv
 
@@ -28,7 +30,11 @@ def remove_prefix(s):
 
 
 def translate(text, language):
-    return translator.translate_text(text, target_lang=code_of[language]).text
+    try:
+        return translator.translate_text(text, target_lang=code_of[language], formality='less').text
+    except:
+        return translator.translate_text(text, target_lang=code_of[language]).text
+
 
 
 def create_content(language):
@@ -110,6 +116,7 @@ class TranslationTask:
         return self
 
     @staticmethod
+    @cache
     def from_db(task_id):
         print("Loading task from db:", task_id)
         db_entry = (
@@ -188,6 +195,7 @@ class Exercise:
             ).execute()
 
     @staticmethod
+    @cache
     def from_db(exercise_id):
         db_entry = (
             supabase.table("exercises")
@@ -200,10 +208,37 @@ class Exercise:
         return exercise
 
 
-create_content("Spanish")
 
-exercises = (
-    supabase.table("exercises").select("*").eq("language", "Spanish").execute().data
-)
-exercises = [Exercise.from_db(exercise["id"]) for exercise in exercises]
-breakpoint()
+def load_all_exercises(language):
+    exercises = (
+        supabase.table("exercises").select("*").eq("language", language).execute().data
+    )
+    exercises = [Exercise.from_db(exercise["id"]) for exercise in exercises]
+    return exercises
+
+
+
+@click.command()
+@click.argument("language")
+def cli(language):
+    create_content(language)
+
+
+def delete_language(language):
+    # Get all exercises
+    exercises = supabase.table("exercises").select("*").eq("language", language).execute().data
+    for exercise in exercises:
+        # Get all translation tasks
+        tasks = supabase.table("exercise_translation_tasks").select("*").eq("exercise_id", exercise["id"]).execute().data
+        for task in tasks:
+            # Delete the relation
+            supabase.table("exercise_translation_tasks").delete().eq("exercise_id", exercise["id"]).execute()
+            # Delete translation task
+            supabase.table("translation_tasks").delete().eq("id", task["translation_task_id"]).execute()
+        # Delete exercise
+        supabase.table("exercises").delete().eq("id", exercise["id"]).execute()
+
+
+if __name__ == "__main__":
+    cli()
+    # delete_language("German")

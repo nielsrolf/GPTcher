@@ -82,12 +82,20 @@ async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user.set_state(new_conversation)
 
 
+async def start_exercise_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
+    
+
+
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("hello", hello))
     app.add_handler(CommandHandler("start", respond))
     app.add_handler(CommandHandler("donate", donate))
-    app.add_handler(CommandHandler("train", start_vocab))
+    app.add_handler(CommandHandler("train", start_exercise_conversation))
     app.add_handler(CommandHandler("converse", start_converse))
 
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)

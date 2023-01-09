@@ -11,9 +11,9 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-template = """In this task, you evaluate a Spanish student. The student writes a message in imperfect Spanish or English or a mixture of both. You translate this to perfect English, and perfect Spanish, and then list the vocabulary used.
+template = """In this task, you evaluate a <language> student. The student writes a message in imperfect Spanish or English or a mixture of both. You translate this to perfect English, and perfect Spanish, and then list the vocabulary used.
 
-Example:
+Example (Spanish):
 >> Original: Hola yo developing un feature nueve para eso bot: un vocabulary trainer
 >> English:  Hi, I am developing a new feature for this bot: a vocabulary trainer.
 >> Translated: Hola, estoy desarrollando una nueva función para este bot: un entrenador de vocabulario.
@@ -28,21 +28,23 @@ Example:
 - vocabulary - vocabulario - vocabulary
 - a trainer - un entrenador - un trainer
 
+Example (<language>):
 >> Original: {}
 >> English:""".format
 
 
 # @measure_time
-async def evaluate(message, vocabulary, context=None):
+async def evaluate(message, vocabulary):
     response = None
     try:
-        prompt = template(message.text)
-
+        prompt = template(message.text).replace("<language>", vocabulary.language)
+        # TODO: transcribe if message.text is None and message.voice is not None
         prefix = ""
-        if context is not None:
-            if "english" in context:
-                prefix = " " + context["english"] + "\n>> Translated:"
-                prompt += prefix
+        if message.sentence_en is not None:
+            prefix = " " + message.sentence_en + "\n>> Translated:"
+            prompt += prefix
+            if message.sentence_translated is not None:
+                prefix += message.sentence_translated + "\n>> Vocabulary:"
 
         response = complete(prompt, stop=["\n\n", ">> Original:"])
         print(prompt + response)

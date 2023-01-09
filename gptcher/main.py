@@ -2,8 +2,9 @@ import asyncio
 import datetime as dt
 import uuid
 
-from gptcher.evaluate import evaluate
+from gptcher.evaluate import evaluate, almost_equal
 from gptcher.utils import complete, supabase
+from gptcher.content.creator import Exercise, TranslationTask
 
 
 class MixedLanguageMessage:
@@ -56,13 +57,13 @@ class ConversationState:
         - VocabTrainingCeateState
     """
 
-    def __init__(self, user, session=None):
+    def __init__(self, user, session=None, context=None):
         self.user = user
         if session:
             self.session = session
         else:
             self.session = str(uuid.uuid4())
-        self.context = {}
+        self.context = context or {}
 
     @property
     def messages(self):
@@ -242,5 +243,76 @@ class VocabTrainingState(ConversationState):
         pass
 
 
-states_list = [WelcomeUser, ConversationState, VocabTrainingState]
+class ExerciseState():
+    """The state of the conversation flow when the user is translating from English to the target language.
+
+    This state is entered when the user sends a message that starts with the command for translating from English to the target language.
+    """
+    def __init__(self, user, session=None, context=None):
+        self.user = user
+        self.exercise = Exercise.from_db(context['exercise_id'])
+        if session:
+            self.session = session
+        else:
+            self.session = str(uuid.uuid4())
+        context["todo"] = context.get("todo", [])
+        self.context = context
+
+    async def start(self):
+        """Enter the state.
+
+        Returns the welcome message and sets the state to conversation
+        """
+        await self.user.reply(self.exercise.task_description)
+        response = self.exercise.translation_tasks[0].sentence_en
+        response = "Translate: " + response
+        self.context['next'] = 1
+        await self.user.reply(response)
+        message = MixedLanguageMessage(
+            self.exercise.task_description + "\n" + response, sender="Teacher", session=self.session
+        )
+        message.to_db()
+        self.context["todo"] = [exercise.id for exercise in self.exercise.translation_tasks[1:]]
+        self.context["previous"] = self.exercise.translation_tasks[0].id
+
+
+    async def respond(self, message_raw: str):
+        """Respond to the message.
+
+        Args:
+            message_raw: The message sent by the user.
+
+        Returns:
+            A response to the message.
+        """
+        previous = TranslationTask.from_db(self.context["previous"])
+        message = MixedLanguageMessage(
+            text=message_raw, user_id=self.user.user_id, session=self.session, text_en=previous.sentence_en, text_translated=previous.sentence_translated, sender="Student")
+        message.to_db()
+        if almost_equal(message.text, message.text_translated):
+            eval_message = f'✅ {previous.sentence_translated}'
+        else:
+            eval_message = f'🤨 Correct: {previous.sentence_translated}'
+            self.context['todo'].append(previous.id)
+        await self.user.reply(eval_message)
+
+        if len(self.context['todo']) == 0:
+            await self.user.reply("You finished the exercise!")
+            self.user.set_state(ConversationState(self.user))
+            return
+
+        task = TranslationTask.from_db(self.context['todo'].pop(0))
+        response = "\nTranslate: " + task.sentence_en
+        await self.user.reply(response)
+        self.context['next'] += 1
+        self.context['previous'] = task.id
+        message = MixedLanguageMessage(
+            eval_message + "\n" + response, sender="Teacher", session=self.session
+        )
+        message.to_db()
+        supabase.table("session").update({"context": self.context}).eq("id", self.session).execute()
+
+
+
+states_list = [WelcomeUser, ConversationState, VocabTrainingState, ExerciseState]
 STATES = {state.__name__: state for state in states_list}
