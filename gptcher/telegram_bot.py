@@ -82,12 +82,14 @@ async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user.set_state(new_conversation)
 
 
-async def start_exercise_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_exercise_conversation(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
     async def reply_func(text):
         print(f"Bot: {text}\n")
         await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
     await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
-    
 
 
 if __name__ == "__main__":

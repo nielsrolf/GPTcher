@@ -6,7 +6,7 @@ While doing so, it can update the user or conversation state.
 
 Messages are connected to a session via the session ID.
 """
-from gptcher.main import STATES, supabase, ExerciseState
+from gptcher.main import STATES, ExerciseSelectState, supabase
 from gptcher.vocabulary import Vocabulary
 
 
@@ -34,7 +34,9 @@ async def start_exercise(user_id, reply_func):
         user_id: The ID of the user.
     """
     user = User(user_id, reply_func=reply_func)
-    new_conversation = ExerciseState(user, context={'exercise_id': '419c7097-7946-4d7c-b38f-f823c813bd96'})
+    new_conversation = ExerciseSelectState(
+        user,
+    )
     await new_conversation.start()
     user.set_state(new_conversation)
 

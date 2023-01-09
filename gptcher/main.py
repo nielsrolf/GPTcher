@@ -2,9 +2,10 @@ import asyncio
 import datetime as dt
 import uuid
 
-from gptcher.evaluate import evaluate, almost_equal
+from gptcher.content.creator import Exercise, TranslationTask, load_all_exercises
+from gptcher.evaluate import almost_equal, evaluate
+from gptcher.language_codes import code_of
 from gptcher.utils import complete, supabase
-from gptcher.content.creator import Exercise, TranslationTask
 
 
 class MixedLanguageMessage:
@@ -243,14 +244,15 @@ class VocabTrainingState(ConversationState):
         pass
 
 
-class ExerciseState():
+class ExerciseState:
     """The state of the conversation flow when the user is translating from English to the target language.
 
     This state is entered when the user sends a message that starts with the command for translating from English to the target language.
     """
+
     def __init__(self, user, session=None, context=None):
         self.user = user
-        self.exercise = Exercise.from_db(context['exercise_id'])
+        self.exercise = Exercise.from_db(context["exercise_id"])
         if session:
             self.session = session
         else:
@@ -266,15 +268,40 @@ class ExerciseState():
         await self.user.reply(self.exercise.task_description)
         response = self.exercise.translation_tasks[0].sentence_en
         response = "Translate: " + response
-        self.context['next'] = 1
+        self.context["next"] = 1
         await self.user.reply(response)
         message = MixedLanguageMessage(
-            self.exercise.task_description + "\n" + response, sender="Teacher", session=self.session
+            self.exercise.task_description + "\n" + response,
+            sender="Teacher",
+            session=self.session,
         )
         message.to_db()
-        self.context["todo"] = [exercise.id for exercise in self.exercise.translation_tasks[1:]]
+        self.context["todo"] = [
+            exercise.id for exercise in self.exercise.translation_tasks[1:]
+        ]
         self.context["previous"] = self.exercise.translation_tasks[0].id
 
+    async def finish(self):
+        """Finish the state.
+
+        Returns the welcome message and sets the state to conversation
+        """
+        score = 10 * len(self.exercise.translation_tasks)
+        await self.user.reply(f"You finished the exercise! You earned {score} points.")
+        supabase.table("finished_exercises").insert(
+            [
+                {
+                    "session_id": self.session,
+                    "user_id": self.user.user_id,
+                    "exercise_id": self.exercise.id,
+                    "score": score,
+                }
+            ]
+        ).execute()
+        new_conversation = ConversationState(self.user)
+        await new_conversation.start()
+        self.user.set_state(new_conversation)
+        return
 
     async def respond(self, message_raw: str):
         """Respond to the message.
@@ -287,32 +314,149 @@ class ExerciseState():
         """
         previous = TranslationTask.from_db(self.context["previous"])
         message = MixedLanguageMessage(
-            text=message_raw, user_id=self.user.user_id, session=self.session, text_en=previous.sentence_en, text_translated=previous.sentence_translated, sender="Student")
+            text=message_raw,
+            user_id=self.user.user_id,
+            session=self.session,
+            text_en=previous.sentence_en,
+            text_translated=previous.sentence_translated,
+            sender="Student",
+        )
         message.to_db()
         if almost_equal(message.text, message.text_translated):
-            eval_message = f'✅ {previous.sentence_translated}'
+            eval_message = f"✅ {previous.sentence_translated}"
         else:
-            eval_message = f'🤨 Correct: {previous.sentence_translated}'
-            self.context['todo'].append(previous.id)
+            eval_message = f"🤨 Correct: {previous.sentence_translated}"
+            self.context["todo"].append(previous.id)
         await self.user.reply(eval_message)
 
-        if len(self.context['todo']) == 0:
-            await self.user.reply("You finished the exercise!")
-            self.user.set_state(ConversationState(self.user))
+        if len(self.context["todo"]) == 0:
+            await self.finish()
             return
 
-        task = TranslationTask.from_db(self.context['todo'].pop(0))
+        task = TranslationTask.from_db(self.context["todo"].pop(0))
         response = "\nTranslate: " + task.sentence_en
         await self.user.reply(response)
-        self.context['next'] += 1
-        self.context['previous'] = task.id
+        self.context["next"] += 1
+        self.context["previous"] = task.id
         message = MixedLanguageMessage(
             eval_message + "\n" + response, sender="Teacher", session=self.session
         )
         message.to_db()
-        supabase.table("session").update({"context": self.context}).eq("id", self.session).execute()
+        supabase.table("session").update({"context": self.context}).eq(
+            "id", self.session
+        ).execute()
 
 
+def deduplicate(seq, idfun=None):
+    seen = set()
+    seen_add = seen.add
+    return [x for x in seq if not (idfun(x) in seen or seen_add(idfun(x)))]
 
-states_list = [WelcomeUser, ConversationState, VocabTrainingState, ExerciseState]
+
+class ExerciseSelectState(ConversationState):
+    """Flow:
+    User: /select
+    Bot: Here are 10 exercises you can do:
+    <topics where the user has not done all exercises>
+    Select one by sending the number of the exercise or ask for more with any other reply
+    User: more
+    Bot: Here are 10 more exercises you can do:
+    <topics where the user has not done all exercises>
+    Select one by sending the number of the exercise or ask for more with any other reply
+    User: 1
+
+    """
+
+    def __init__(self, user, session=None, context=None):
+        if context is None:
+            context = {"available": {}, "show_min": 1, "show_max": 10}
+        super().__init__(user, session, context)
+
+    async def start(self):
+        language = code_of[self.user.language].split(";")[0]
+        exercises = (
+            supabase.table("exercises")
+            .select("*")
+            .eq("language", language)
+            .execute()
+            .data
+        )
+        # Get all done exercises
+        done_exercises = (
+            supabase.table("finished_exercises")
+            .select("*")
+            .eq("user_id", self.user.user_id)
+            .execute()
+            .data
+        )
+        done_ids = [exercise["exercise_id"] for exercise in done_exercises]
+        available_exercises = [
+            exercise for exercise in exercises if exercise["id"] not in done_ids
+        ]
+        if len(available_exercises) == 0:
+            await self.user.reply(
+                "You have done all the exercises! Congratulations! You can do some again :)"
+            )
+            available_exercises = exercises
+        available = deduplicate(available_exercises, lambda i: i["topic"])
+        self.context["available"] = {
+            str(i + 1): {"id": exercise["id"], "topic": exercise["topic"]}
+            for i, exercise in enumerate(available)
+        }
+        print(self.context["available"].keys())
+        await self.reply_with_exercises()
+
+    async def reply_with_exercises(self):
+        show = ""
+        for i in range(self.context["show_min"], self.context["show_max"] + 1):
+            exercise = Exercise.from_db(self.context["available"][str(i)]["id"])
+            show += f"{i}: {exercise.topic} ({exercise.exercise_number})\n"
+        if show == "":
+            self.context["show_min"] = 1
+            self.context["show_max"] = 10
+            await self.reply_with_exercises()
+            return
+        await self.user.reply("Here are some exercises you can do:")
+        await self.user.reply(show)
+        await self.user.reply(
+            "Select one by sending the number of the exercise or ask for more with any other reply"
+        )
+        supabase.table("session").update({"context": self.context}).eq(
+            "id", self.session
+        ).execute()
+
+    async def reply_with_more_exercises(self):
+        self.context["show_min"] += 10
+        self.context["show_max"] += 10
+        await self.reply_with_exercises()
+
+    async def respond(self, message_raw: str):
+        try:
+            selected = str(int(message_raw))
+            if selected in self.context["available"]:
+                exercise = Exercise.from_db(self.context["available"][selected]["id"])
+                exercise_state = ExerciseState(
+                    self.user, self.session, {"exercise_id": exercise.id}
+                )
+                await exercise_state.start()
+                self.user.set_state(exercise_state)
+                return
+            else:
+                await self.user.reply(
+                    "We don't have that exercise. Please select one from the list."
+                )
+                await self.reply_with_exercises()
+                return
+        except ValueError:
+            await self.reply_with_more_exercises()
+            return
+
+
+states_list = [
+    WelcomeUser,
+    ConversationState,
+    VocabTrainingState,
+    ExerciseState,
+    ExerciseSelectState,
+]
 STATES = {state.__name__: state for state in states_list}
