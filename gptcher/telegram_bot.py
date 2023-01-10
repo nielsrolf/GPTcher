@@ -29,11 +29,12 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
     await update.message.reply_text(f"Hello {update.effective_user.first_name}")
-
-    import time
-
-    time.sleep(4)
-    await update.message.reply_text(f"wazzzuuuup")
+    from gptcher.content.text_to_voice import read_and_save_voice
+    voice_url = read_and_save_voice("Hola tio, como estas mi amigo? Toto bien? yo", "Spanish")
+    # send voice message
+    await context.bot.send_voice(
+        chat_id=update.effective_chat.id, voice=voice_url,
+    )
 
 
 async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -46,7 +47,12 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def reply_func(text):
         print(f"Bot: {text}\n")
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id, voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
     await bot.respond(
         str(update.effective_chat.id), update.message.text, reply_func=reply_func
@@ -63,9 +69,13 @@ async def donate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def reply_func(text):
         print(f"Bot: {text}\n")
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-
-    user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id, voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
     await user.enter_state(new_conversation)
 
@@ -73,9 +83,14 @@ async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def reply_func(text):
         print(f"Bot: {text}\n")
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id, voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
-    user = bot.User(str(update.effective_chat.id), reply_func=reply_func)
+    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
     new_conversation = ConversationState(user)
     await user.enter_state(new_conversation)
 

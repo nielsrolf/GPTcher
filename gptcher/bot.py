@@ -23,6 +23,7 @@ async def respond(user_id, message, reply_func):
     Returns:
         A response to the message.
     """
+    user_id = str(user_id) + "tmp4"
     user = User(user_id, reply_func=reply_func)
     await user.state.respond(message)
 
@@ -33,6 +34,7 @@ async def start_exercise(user_id, reply_func):
     Args:
         user_id: The ID of the user.
     """
+    user_id = str(user_id) + "tmp4"
     user = User(user_id, reply_func=reply_func)
     new_conversation = ExerciseSelectState(
         user,
@@ -63,9 +65,11 @@ class User:
         user_db = (
             supabase.table("users").upsert({"user_id": self.user_id}).execute().data[0]
         )
+        print('session', user_db['session'])
         self.language = user_db["language"]
         # Get the session from the database or create a new one if the user is new
-        if user_db["session"] is None:
+        is_new_user = user_db["session"] is None
+        if is_new_user:
             session_response = (
                 supabase.table("session").insert({"user_id": self.user_id}).execute()
             )
@@ -96,9 +100,10 @@ class User:
                 "context": state.context,
             }
         ).execute()
-        supabase.table("users").update({"session": self.state.session}).eq(
+        supabase.table("users").update({"session": state.session}).eq(
             "user_id", self.user_id
         ).execute()
+        print("Entered state", state.__class__.__name__, state.session)
 
 
 async def test_new_user():

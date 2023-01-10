@@ -1,11 +1,13 @@
 import asyncio
 import datetime as dt
 import uuid
+import threading
 
 from gptcher.content.creator import Exercise, TranslationTask, load_all_exercises
 from gptcher.evaluate import almost_equal, evaluate
 from gptcher.language_codes import code_of
 from gptcher.utils import complete, supabase, complete_and_parse_json
+from gptcher.content.text_to_voice import read_and_save_voice
 
 
 class MixedLanguageMessage:
@@ -185,7 +187,7 @@ class WelcomeUser(ConversationState):
 
         Returns the welcome message and sets the state to conversation
         """
-        self.user.reply(welcome_message)
+        await self.user.reply(welcome_message)
         new_conversation = ConversationState(self.user)
         await self.user.enter_state(new_conversation)
 
@@ -233,6 +235,16 @@ class VocabTrainingState(ConversationState):
         exercise = self.create_exercise(vocab_str)
         session = ExerciseState(self.user, context={"exercise_id": exercise.id})
         await self.user.enter_state(session)
+        # create all voice messages
+        thread = threading.Thread(target=self.create_voice_messages, args=(exercise,))
+        thread.start()
+    
+    def create_voice_messages(self, exercise):
+        """Create voice messages for all tasks in the exercise."""
+        for task in exercise.translation_tasks:
+            task.voice = read_and_save_voice(task.sentence_translated, task.language)
+            print("Created voice message for task", task.id)
+            task.to_db()
     
     def create_exercise(self, vocab_str):
         task_description = f"¡Aprendamos nuevas palabras! Echa un vistazo a la siguiente lista: \n{vocab_str}"
@@ -333,6 +345,8 @@ class ExerciseState:
             A response to the message.
         """
         previous = TranslationTask.from_db(self.context["previous"])
+        if previous.voice:
+            await self.user.reply(previous.voice)
         message = MixedLanguageMessage(
             text=message_raw,
             user_id=self.user.user_id,
