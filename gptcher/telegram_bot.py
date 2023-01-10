@@ -113,6 +113,18 @@ async def start_exercise_conversation(
     await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
 
 
+async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Available commands:\n"
+        "/train - Start an exercise from a list of topics\n"
+        "/vocab - Start an exercise created just for you - with the words you are learning\n"
+        "/converse - Start an open conversation with the bot\n"
+        "/donate - Donate to the bot's patreon\n"
+        "/help - Show this message\n",
+    )
+    
+
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("hello", hello))
@@ -121,6 +133,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("train", start_exercise_conversation))
     app.add_handler(CommandHandler("vocab", start_vocab))
     app.add_handler(CommandHandler("converse", start_converse))
+    app.add_handler(CommandHandler("help", show_help))
 
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)
     app.add_handler(teach_handler)

@@ -235,6 +235,7 @@ class VocabTrainingState(ConversationState):
         vocab_str = str(self.user.vocabulary.get_learn_list(5))
         exercise = self.create_exercise(vocab_str)
         session = ExerciseState(self.user, context={"exercise_id": exercise.id})
+        await self.user.reply(exercise.task_description)
         await self.user.enter_state(session)
         # create all voice messages
         thread = threading.Thread(target=self.create_voice_messages, args=(exercise,))
@@ -421,6 +422,10 @@ class ExerciseState:
         return response
 
     async def transcribe(self, task):
+        if task.check_voice() is None:
+            breakpoint()
+            await self.target_to_en(task)
+            return
         response = "\nWrite what you hear:"
         await self.user.reply(response)
         await self.user.reply(task.voice)
