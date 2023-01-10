@@ -4,7 +4,13 @@
 .env
 secrets/
 data/
-
+**/__pycache__/
+*.mp3
+*.ogg
+**/*.mp3
+**/*.ogg
+.DS_Store
+**/.DS_Store
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/

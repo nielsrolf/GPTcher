@@ -345,8 +345,9 @@ class ExerciseState:
             A response to the message.
         """
         previous = TranslationTask.from_db(self.context["previous"])
-        if previous.voice:
-            await self.user.reply(previous.voice)
+        voice = previous.check_voice()
+        if voice:
+            await self.user.reply(voice)
         message = MixedLanguageMessage(
             text=message_raw,
             user_id=self.user.user_id,

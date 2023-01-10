@@ -39,6 +39,7 @@ def select_voice(language):
 
 
 def read_and_save_voice(text, language):
+    print(text)
     filename = hash_string(text + language)[:7] + '.ogg'
     voice, engine = select_voice(language)
     if voice_url := check_if_exists_in_s3(filename):
@@ -61,7 +62,6 @@ def read_and_save_voice(text, language):
 
 
 def check_if_exists_in_s3(filename):
-    return False
     s3 = boto3.client('s3')
     try:
         s3.head_object(Bucket='gptcher', Key=filename)

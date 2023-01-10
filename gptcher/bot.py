@@ -91,19 +91,22 @@ class User:
             state: The state to set.
         """
         self.state = state
-        await state.start()
         supabase.table("session").upsert(
             {
                 "id": state.session,
                 "type": state.__class__.__name__,
                 "user_id": self.user_id,
-                "context": state.context,
             }
         ).execute()
         supabase.table("users").update({"session": state.session}).eq(
             "user_id", self.user_id
         ).execute()
         print("Entered state", state.__class__.__name__, state.session)
+        await state.start()
+        # save context
+        supabase.table("session").update({"context": state.context}).eq(
+            "id", state.session
+        ).execute()
 
 
 async def test_new_user():
