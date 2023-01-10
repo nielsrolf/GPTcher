@@ -30,10 +30,14 @@ async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     await update.message.reply_text(f"Hello {update.effective_user.first_name}")
     from gptcher.content.text_to_voice import read_and_save_voice
-    voice_url = read_and_save_voice("Hola tio, como estas mi amigo? Toto bien? yo", "Spanish")
+
+    voice_url = read_and_save_voice(
+        "Hola tio, como estas mi amigo? Toto bien? yo", "Spanish"
+    )
     # send voice message
     await context.bot.send_voice(
-        chat_id=update.effective_chat.id, voice=voice_url,
+        chat_id=update.effective_chat.id,
+        voice=voice_url,
     )
 
 
@@ -49,7 +53,8 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Bot: {text}\n")
         if text.startswith("http"):
             await context.bot.send_voice(
-                chat_id=update.effective_chat.id, voice=text,
+                chat_id=update.effective_chat.id,
+                voice=text,
             )
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
@@ -71,10 +76,12 @@ async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Bot: {text}\n")
         if text.startswith("http"):
             await context.bot.send_voice(
-                chat_id=update.effective_chat.id, voice=text,
+                chat_id=update.effective_chat.id,
+                voice=text,
             )
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+
     user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
     await user.enter_state(new_conversation)
@@ -85,7 +92,8 @@ async def start_converse(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print(f"Bot: {text}\n")
         if text.startswith("http"):
             await context.bot.send_voice(
-                chat_id=update.effective_chat.id, voice=text,
+                chat_id=update.effective_chat.id,
+                voice=text,
             )
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)

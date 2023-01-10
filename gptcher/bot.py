@@ -65,7 +65,7 @@ class User:
         user_db = (
             supabase.table("users").upsert({"user_id": self.user_id}).execute().data[0]
         )
-        print('session', user_db['session'])
+        print("session", user_db["session"])
         self.language = user_db["language"]
         # Get the session from the database or create a new one if the user is new
         is_new_user = user_db["session"] is None

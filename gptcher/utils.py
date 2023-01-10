@@ -101,7 +101,10 @@ def complete_and_parse_json(prompt, stop, prefix="", max_tokens=256):
                 new_response = complete(prompt, stop, response, max_tokens)
                 if new_response == response:
                     # check if we need to append a ','
-                    if response.count("[") > response.count("]") and response[-1] == "}":
+                    if (
+                        response.count("[") > response.count("]")
+                        and response[-1] == "}"
+                    ):
                         response += ","
                 else:
                     response = new_response

@@ -116,7 +116,7 @@ class TranslationTask:
         db_entry = supabase.table("translation_tasks").upsert(data).execute().data[0]
         self.id = db_entry["id"]
         return self
-    
+
     def check_voice(self):
         """needed because of cache"""
         if self.voice is None:
@@ -125,7 +125,7 @@ class TranslationTask:
                 .select("*")
                 .eq("id", self.id)
                 .execute()
-                .data[0]['voice']
+                .data[0]["voice"]
             )
             self.voice = db_entry
         return self.voice
@@ -182,7 +182,7 @@ class Exercise:
         task_description,
         vocabulary_en,
         sentences_en,
-        user_id=None
+        user_id=None,
     ):
         translation_tasks = [
             TranslationTask.create(language, sentence) for sentence in sentences_en

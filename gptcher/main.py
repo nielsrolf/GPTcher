@@ -2,6 +2,7 @@ import asyncio
 import datetime as dt
 import uuid
 import threading
+import random
 
 from gptcher.content.creator import Exercise, TranslationTask, load_all_exercises
 from gptcher.evaluate import almost_equal, evaluate
@@ -298,21 +299,31 @@ class ExerciseState:
 
         Returns the welcome message and sets the state to conversation
         """
-        await self.user.reply(self.exercise.task_description)
-        response = self.exercise.translation_tasks[0].sentence_en
-        response = "Translate: " + response
-        self.context["next"] = 1
-        await self.user.reply(response)
+        await self.user.reply(f"Translate or transcribe the next sentences.")
+        response = await self.target_to_en(self.exercise.translation_tasks[0])
         message = MixedLanguageMessage(
             self.exercise.task_description + "\n" + response,
             sender="Teacher",
             session=self.session,
         )
         message.to_db()
-        self.context["todo"] = [
-            exercise.id for exercise in self.exercise.translation_tasks[1:]
-        ]
-        self.context["previous"] = self.exercise.translation_tasks[0].id
+        # Add todos!
+        # One iteration: transcribe or target->en
+        todos = [{
+                'format': random.choice(['transcribe', 'target_to_en']),
+                'id': task.id
+            }
+            for task in self.exercise.translation_tasks[1:]]
+        # One iteration: en->target
+        todos += [{
+                'format': 'en_to_target',
+                'id': task.id
+            }
+            for task in self.exercise.translation_tasks]
+        
+
+        self.context["todo"] = todos
+        self.context["previous"] = {"format": "target_to_en", "id": self.exercise.translation_tasks[0].id}
 
     async def finish(self):
         """Finish the state.
@@ -344,10 +355,36 @@ class ExerciseState:
         Returns:
             A response to the message.
         """
-        previous = TranslationTask.from_db(self.context["previous"])
-        voice = previous.check_voice()
-        if voice:
-            await self.user.reply(voice)
+        message, eval_response = await self.correct_previous(message_raw)
+
+        if len(self.context["todo"]) == 0:
+            await self.finish()
+            return
+
+        next_task = self.context["todo"].pop(0)
+        task = TranslationTask.from_db(next_task['id'])
+        if next_task['format'] == 'en_to_target':
+            response = await self.en_to_target(task)
+        elif next_task['format'] == 'target_to_en':
+            response = await self.target_to_en(task)
+        elif next_task['format'] == 'transcribe':
+            response = await self.transcribe(task)
+        
+        self.context['previous'] = next_task
+        supabase.table("session").update({"context": self.context}).eq(
+            "id", self.session
+        ).execute()
+        message = MixedLanguageMessage(
+            eval_response + "\n" + response, sender="Teacher", session=self.session
+        )
+        message.to_db()
+
+    async def correct_previous(self, message_raw):
+        previous = TranslationTask.from_db(self.context["previous"]["id"])
+        if self.context["previous"]["format"] == 'en_to_target':
+            voice = previous.check_voice()
+            if voice:
+                await self.user.reply(voice)
         message = MixedLanguageMessage(
             text=message_raw,
             user_id=self.user.user_id,
@@ -357,29 +394,38 @@ class ExerciseState:
             sender="Student",
         )
         message.to_db()
-        if almost_equal(message.text, message.text_translated):
-            eval_message = f"✅ {previous.sentence_translated}"
-        else:
-            eval_message = f"🤨 Correct: {previous.sentence_translated}"
-            self.context["todo"].append(previous.id)
+        if self.context["previous"]["format"] == 'en_to_target' or self.context["previous"]["format"] == 'transcribe':
+            if almost_equal(message.text, message.text_translated):
+                eval_message = f"✅ {previous.sentence_translated}"
+            else:
+                eval_message = f"🤨 Correct: {previous.sentence_translated}"
+                self.context["todo"].insert(5, self.context["previous"])
+        elif self.context["previous"]["format"] == 'target_to_en':
+            if almost_equal(message.text, message.text_en):
+                eval_message = f"✅ {previous.sentence_en}"
+            else:
+                eval_message = f"🤨 Correct: {previous.sentence_en}"
         await self.user.reply(eval_message)
+        return message, eval_message
 
-        if len(self.context["todo"]) == 0:
-            await self.finish()
-            return
-
-        task = TranslationTask.from_db(self.context["todo"].pop(0))
+    async def en_to_target(self, task):
         response = "\nTranslate: " + task.sentence_en
         await self.user.reply(response)
-        self.context["next"] += 1
-        self.context["previous"] = task.id
-        message = MixedLanguageMessage(
-            eval_message + "\n" + response, sender="Teacher", session=self.session
-        )
-        message.to_db()
-        supabase.table("session").update({"context": self.context}).eq(
-            "id", self.session
-        ).execute()
+        return response
+
+    async def target_to_en(self, task):
+        response = "\nTranslate: " + task.sentence_translated
+        await self.user.reply(response)
+        if task.voice:
+            await self.user.reply(task.voice)
+        return response
+
+    async def transcribe(self, task):
+        response = "\nWrite what you hear:"
+        await self.user.reply(response)
+        await self.user.reply(task.voice)
+        return response
+    
 
 
 def deduplicate(seq, idfun=None):
