@@ -42,6 +42,12 @@ async def start_exercise(user_id, reply_func):
     await user.enter_state(new_conversation)
 
 
+async def change_language(user_id, language, reply_func):
+    user_id = str(user_id) + "tmp4"
+    user = User(user_id, reply_func=reply_func)
+    await user.change_language(language)
+
+
 class User:
     """A user of the bot.
 
@@ -56,6 +62,13 @@ class User:
         self.state = None
         self.vocabulary = None
         self._load_state()
+    
+    async def change_language(self, language):
+        self.language = language
+        supabase.table("users").update({"language": language}).eq("user_id", self.user_id).execute()
+        self.vocabulary = Vocabulary(self, language)
+        new_conversation = ConversationState(self)
+        await self.enter_state(new_conversation)
 
     def _load_state(self):
         """Load the state of the user from the database.

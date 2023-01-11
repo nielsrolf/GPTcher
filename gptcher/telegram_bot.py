@@ -111,7 +111,13 @@ async def start_exercise_conversation(
 ):
     async def reply_func(text):
         print(f"Bot: {text}\n")
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
     await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
 
@@ -143,7 +149,13 @@ async def speech(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def reply_func(text):
         print(f"Bot: {text}\n")
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
     user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
     # Get the text from the audio file
     text = speech_recognition_api_request(file.file_path, code_of[user.language])
@@ -166,6 +178,20 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
+async def set_german(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    
+    await bot.change_language(str(update.effective_chat.id), "German", reply_func=reply_func)
+
+
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("hello", hello))
@@ -175,6 +201,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("vocab", start_vocab))
     app.add_handler(CommandHandler("converse", start_converse))
     app.add_handler(CommandHandler("help", show_help))
+    app.add_handler(CommandHandler("german", set_german))
+    app.add_handler(CommandHandler("deutsch", set_german))
 
     app.add_handler(MessageHandler(filters.VOICE, speech))
 
