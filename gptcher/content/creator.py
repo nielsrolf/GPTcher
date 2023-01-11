@@ -154,10 +154,10 @@ class Exercise:
     exercise_number: int
     task_description: str
     id: str = None
-    translation_tasks: List[TranslationTask] = None
-    user_id: str = None
-
-    def __post_init__(self):
+    user_id: str = None            
+    
+    @property
+    def translation_tasks(self):
         if self.id:
             task_ids = (
                 supabase.table("exercise_translation_tasks")
@@ -167,10 +167,11 @@ class Exercise:
                 .execute()
                 .data
             )
-            self.translation_tasks = [
+        translation_tasks = [
                 TranslationTask.from_db(task["translation_task_id"])
                 for task in task_ids
             ]
+        return translation_tasks
 
     @staticmethod
     def create(
@@ -196,13 +197,11 @@ class Exercise:
             task_description,
             user_id=user_id,
         )
-        exercise.translation_tasks = translation_tasks
         exercise.to_db()
         return exercise
 
     def to_db(self):
         data = dict(**self.__dict__)
-        del data["translation_tasks"]
         if not self.id:
             del data["id"]
         db_entry = supabase.table("exercises").insert(data).execute()

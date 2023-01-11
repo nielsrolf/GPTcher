@@ -6,7 +6,7 @@ While doing so, it can update the user or conversation state.
 
 Messages are connected to a session via the session ID.
 """
-from gptcher.main import STATES, ExerciseSelectState, supabase
+from gptcher.main import STATES, ExerciseSelectState, supabase, ConversationState
 from gptcher.vocabulary import Vocabulary
 
 
@@ -81,8 +81,12 @@ class User:
                 .execute()
             )
         session = session_response.data[0]
-        self.state = STATES[session["type"]](self, session["id"], session["context"])
         self.vocabulary = Vocabulary.from_list(self, user_db["words"])
+        try:
+            self.state = STATES[session["type"]](self, session["id"], session["context"])
+        except:
+            self.enter_state(ConversationState(self))
+
 
     async def enter_state(self, state):
         """Set the state of the user.
