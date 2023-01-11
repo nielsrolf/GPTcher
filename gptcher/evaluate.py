@@ -47,7 +47,6 @@ async def evaluate(message, vocabulary):
                 prefix += message.text_translated + "\n>> Vocabulary:"
 
         response = complete(prompt, stop=["\n\n", ">> Original:"])
-        print(prompt + response)
         response = prefix + response
         # Extract Enflish and Translated
         english = response.split("\n>> Translated:")[0].strip()
