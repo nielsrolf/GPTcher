@@ -275,7 +275,10 @@ class VocabTrainingState(ConversationState):
         Returns:
             A response to the message.
         """
-        breakpoint()
+        # we shouldnt be here, print traceback
+        print("VocabTrainingState should not be called with respond")
+        from traceback import print_stack
+        print_stack()
         await self.start()
 
 
@@ -423,7 +426,6 @@ class ExerciseState:
 
     async def transcribe(self, task):
         if task.check_voice() is None:
-            breakpoint()
             await self.target_to_en(task)
             return
         response = "\nWrite what you hear:"
