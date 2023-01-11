@@ -1,5 +1,6 @@
 import os
 
+import banana_dev as banana
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import ChatAction
@@ -13,6 +14,8 @@ from telegram.ext import (
 
 from gptcher import bot
 from gptcher.main import ConversationState, VocabTrainingState
+from gptcher.language_codes import code_of
+from gptcher.utils import measure_time, print_times
 
 load_dotenv(override=True)
 is_prod = os.getenv("IS_PROD") == "True"
@@ -113,6 +116,44 @@ async def start_exercise_conversation(
     await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
 
 
+@measure_time
+def speech_recognition_api_request(file_url, language_code):
+    model_key = "86b4a6b0-425f-4767-9ce9-faf62a0b8ca2"
+    banana_api_key = os.environ['BANANA_API_KEY']
+    model_payload = {
+        "audio": file_url,
+        "language": language_code,
+    }
+    out = banana.run(banana_api_key, model_key, model_payload)
+    return out['modelOutputs'][0]['transcription'].strip()
+
+
+async def speech(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # await context.bot.send_chat_action(
+    #     chat_id=update.effective_chat.id, action=ChatAction.SPEAKING
+    # )
+    # Get the update object and extract the message and file_id
+    update = update
+    message = update.message
+    file_id = message.voice.file_id
+    # Use the bot to get the file object
+    file = await context.bot.get_file(file_id)
+
+    # Get the user
+
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
+    # Get the text from the audio file
+    text = speech_recognition_api_request(file.file_path, code_of[user.language])
+    await user.reply(f"Understood: {text}")
+    print_times()
+    # Reply
+    update.message.text = text
+    await respond(update, context)
+
+
 async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -123,7 +164,7 @@ async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/donate - Donate to the bot's patreon\n"
         "/help - Show this message\n",
     )
-    
+
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
@@ -134,6 +175,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("vocab", start_vocab))
     app.add_handler(CommandHandler("converse", start_converse))
     app.add_handler(CommandHandler("help", show_help))
+
+    app.add_handler(MessageHandler(filters.VOICE, speech))
 
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)
     app.add_handler(teach_handler)
