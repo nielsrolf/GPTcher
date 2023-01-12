@@ -24,6 +24,7 @@ class MixedLanguageMessage:
         created_at=None,
         updated_at=None,
         id=None,
+        evaluation=None,
     ):
         self.text = text
         if sender is None:
@@ -34,6 +35,7 @@ class MixedLanguageMessage:
         self.text_translated = text_translated
         self.voice_url = voice_url
         self.session = session
+        self.evaluation = evaluation
 
         if created_at:
             self.created_at = created_at
@@ -48,6 +50,7 @@ class MixedLanguageMessage:
             "text_en": self.text_en,
             "text_translated": self.text_translated,
             "session": self.session,
+            "evaluation": self.evaluation,
         }
         supabase.table("messages").insert(data).execute()
 
@@ -92,7 +95,7 @@ class Session:
 
 conversation_state_prompt = """You are GPTcher, a funny <language> tutor bot. You teach <language> to a student by having a conversation with them.
 
-Your student sends a message in broken <language> or English (or a mixture of both), and you first correct the student's message to be in perfect <language>, and then respond like a normal conversation partner. You keep the conversation going by asking interesting questions, or prompting the user to talk about a topic. Don't be boring, don't ask the same questions multiple times. 
+Your student sends a message in broken <language> or English (or a mixture of both), and you first correct the student's message to be in perfect <language>, and then respond like a normal conversation partner. You keep the conversation going by asking interesting questions, or prompting the user to talk about a topic. Don't be boring, don't ask the same questions multiple times, and never ask the student what they want to learn - it is your job to suggest!
 The complete format is:
 >> Student: {{message in broken <language> or English}}
 >> Teacher: Correct: {{message in perfect <language>}} - Answer: {{answer to the message in <language>}} ({{English translation of the answer}})
@@ -250,7 +253,7 @@ class VocabTrainingState(ConversationState):
             task.to_db()
     
     def create_exercise(self, vocab_str):
-        task_description = f"¡Aprendamos nuevas palabras! Echa un vistazo a la siguiente lista: \n{vocab_str}"
+        task_description = f"Have a look at these words: \n{vocab_str}"
         prompt = vocab_init_message(vocab_str).replace("<language>", self.user.language)
         tasks = complete_and_parse_json(prompt, prefix=vocab_init_prefix, stop=["\n\n", "..."], max_tokens=1000)
         sentences_en = [task['english'] for task in tasks]
@@ -400,9 +403,12 @@ class ExerciseState:
             sender="Student",
         )
         message.to_db()
+        if self.context["previous"]["format"] == 'en_to_target':
+            asyncio.create_task(evaluate(message, self.user.vocabulary))
         if self.context["previous"]["format"] == 'en_to_target' or self.context["previous"]["format"] == 'transcribe':
             if almost_equal(message.text, message.text_translated):
                 eval_message = f"✅ {previous.sentence_translated}"
+                asyncio.create_task(evaluate(message, self.user.vocabulary))
             else:
                 eval_message = f"🤨 Correct: {previous.sentence_translated}"
                 self.context["todo"].insert(5, self.context["previous"])

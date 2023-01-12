@@ -46,16 +46,16 @@ class Word:
         self.showed = showed
         self.to_learn = to_learn
         self.target_language = target_language
-        if percentage is None:
-            try:
-                self.percentage = (
-                    dictionary_en.loc[dictionary_en.word == self.word_en].iloc[0].usage
-                )
-            except IndexError:
-                print(f"Word {self.word_en} not found in English vocabulary")
-                self.percentage = 0
-        else:
-            self.percentage = percentage
+        # if percentage is None:
+        #     try:
+        #         self.percentage = (
+        #             dictionary_en.loc[dictionary_en.word == self.word_en].iloc[0].usage
+        #         )
+        #     except IndexError:
+        #         print(f"Word {self.word_en} not found in English vocabulary")
+        #         self.percentage = 0
+        # else:
+        #     self.percentage = percentage
 
     @property
     def word_translated(self):

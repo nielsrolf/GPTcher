@@ -198,6 +198,12 @@ class Exercise:
             user_id=user_id,
         )
         exercise.to_db()
+
+        for i, task in enumerate(translation_tasks):
+            supabase.table("exercise_translation_tasks").insert(
+                {"exercise_id": exercise.id, "translation_task_id": task.id, "order": i}
+            ).execute()
+
         return exercise
 
     def to_db(self):
@@ -206,10 +212,6 @@ class Exercise:
             del data["id"]
         db_entry = supabase.table("exercises").insert(data).execute()
         self.id = db_entry.data[0]["id"]
-        for i, task in enumerate(self.translation_tasks):
-            supabase.table("exercise_translation_tasks").insert(
-                {"exercise_id": self.id, "translation_task_id": task.id, "order": i}
-            ).execute()
 
     @staticmethod
     @cache
