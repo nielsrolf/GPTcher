@@ -6,12 +6,13 @@ from dotenv import load_dotenv
 from unidecode import unidecode
 
 from gptcher.utils import complete_and_parse_json
+from gptcher.content.voice_to_text import transcribe
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-template = """In this task, you evaluate students. The students write messages in imperfect <language> or English or a mixture of both. You translate this to perfect English, and perfect <language>, and then list the vocabulary used. If the student seems to be asking for help with using the bot, also note this. Your response is in JSON with the format used in the example.
+template = """In this task, you evaluate students. The students write messages in imperfect <language> or English or a mixture of both. You translate this to perfect English, and perfect <language>, and then list the vocabulary used. If the student seems to be asking for help with using the bot -e.g. asking how to get back to the chat or how to exit this session, also note this. Your response is in JSON with the format used in the example.
 
 Example:
 Spanish Student: Hola yo developing un feature nueve para bot: un vocabulary trainer
@@ -43,12 +44,15 @@ eval_prefix = '''{
 
 eval_prefix_with_english = '''{
     "learning_language": "<language>",
-    "msg_english": "<message_en>"'''
+    "msg_english": "<message_en>",'''
 
 
 # @measure_time
-async def evaluate(message, vocabulary):
-    try:
+async def evaluate(message, vocabulary, on_fail=None):
+    if message.voice_url is not None and message.text is None:
+        message.text = transcribe(message.voice_url, vocabulary.language)
+    # try:
+    if True:
         prompt = template.replace("<message>", message.text).replace("<language>", vocabulary.language)
         if message.text_en is not None:
             prefix = eval_prefix_with_english.replace("<message_en>", message.text_en)
@@ -60,15 +64,19 @@ async def evaluate(message, vocabulary):
             await vocabulary.user.reply("You can always get help by typing /help")
         message.evaluation = eval_response
         message.to_db()
+        total_score = 0
         for wordpair in eval_response["vocabulary"]:
             score = get_score(wordpair["target"], wordpair["student"])
+            total_score += score
             if wordpair["en"] not in vocabulary:
                 vocabulary.add_wordpair(wordpair["en"], wordpair["target"])
             vocabulary[wordpair["en"]].register_score(score, wordpair["target"])
         vocabulary.to_db()
-    except Exception as e:
-        print(e)
-        print("Error in evaluation", message.__dict__)
+        if message.text_translated is not None and not almost_equal(message.text, message.text_translated) and on_fail is not None:
+            await on_fail()
+    # except Exception as e:
+    #     print(e)
+    #     print("Error in evaluation", message.__dict__)
 
 
 def normalize_string(s):

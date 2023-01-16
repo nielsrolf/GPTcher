@@ -9,6 +9,7 @@ from gptcher.evaluate import almost_equal, evaluate
 from gptcher.language_codes import code_of
 from gptcher.utils import complete, supabase, complete_and_parse_json
 from gptcher.content.text_to_voice import read_and_save_voice
+from gptcher.content.voice_to_text import transcribe
 
 
 class MixedLanguageMessage:
@@ -86,10 +87,10 @@ class Session:
         messages = [MixedLanguageMessage(**message) for message in messages_db]
         return messages
 
-    async def start(self, message_raw: str):
+    async def start(self, message_raw: str, voice_url: str):
         raise NotImplementedError()
 
-    async def respond(self, message_raw: str):
+    async def respond(self, message_raw: str, voice_url: str):
         raise NotImplementedError()
 
 
@@ -143,7 +144,7 @@ class ConversationState(Session):
         prompt += ">> Teacher: "
         return prompt
 
-    async def respond(self, message_raw: str):
+    async def respond(self, message_raw: str, voice_url: str):
         """Respond to the message.
 
         Args:
@@ -152,8 +153,11 @@ class ConversationState(Session):
         Returns:
             A response to the message.
         """
+        if voice_url:
+            message_raw = transcribe(voice_url, self.user.language)
+            await self.user.reply(f"Understood: {message_raw}")
         message = MixedLanguageMessage(
-            text=message_raw, user_id=self.user.user_id, session=self.session
+            text=message_raw, user_id=self.user.user_id, session=self.session, voice_url=voice_url
         )
         message.to_db()
         prompt = self.get_prompt()
@@ -196,7 +200,7 @@ class WelcomeUser(ConversationState):
         new_conversation = ConversationState(self.user)
         await self.user.enter_state(new_conversation)
 
-    async def respond(self, message_raw: str):
+    async def respond(self, message_raw: str, voice_url: str):
         """Respond to the message.
 
         Args:
@@ -270,7 +274,7 @@ class VocabTrainingState(ConversationState):
             user_id=self.user.user_id)
         return exercise
 
-    async def respond(self, message_raw: str):
+    async def respond(self, message_raw: str, voice_url: str):
         """Respond to the message.
 
         Args:
@@ -354,7 +358,7 @@ class ExerciseState:
         await self.user.enter_state(new_conversation)
         return
 
-    async def respond(self, message_raw: str):
+    async def respond(self, message_raw: str, voice_url: str):
         """Respond to the message.
 
         Args:
@@ -363,7 +367,7 @@ class ExerciseState:
         Returns:
             A response to the message.
         """
-        message, eval_response = await self.correct_previous(message_raw)
+        message, eval_response = await self.correct_previous(message_raw, voice_url)
 
         if len(self.context["todo"]) == 0:
             await self.finish()
@@ -379,6 +383,16 @@ class ExerciseState:
             response, actual_format = await self.transcribe(task)
             next_task['format'] = actual_format
         
+
+        if self.context["previous"]["format"] == 'en_to_target':
+            c_previous = dict(**self.context["previous"])
+            async def on_fail():
+                self.context["todo"].insert(5, c_previous)
+                supabase.table("session").update({"context": self.context}).eq(
+                    "id", self.session
+                ).execute()
+            asyncio.create_task(evaluate(message, self.user.vocabulary, on_fail))
+        
         self.context['previous'] = next_task
         supabase.table("session").update({"context": self.context}).eq(
             "id", self.session
@@ -388,7 +402,7 @@ class ExerciseState:
         )
         message.to_db()
 
-    async def correct_previous(self, message_raw):
+    async def correct_previous(self, message_raw, voice_url):
         previous = TranslationTask.from_db(self.context["previous"]["id"])
         if self.context["previous"]["format"] == 'en_to_target':
             voice = previous.check_voice()
@@ -401,17 +415,17 @@ class ExerciseState:
             text_en=previous.sentence_en,
             text_translated=previous.sentence_translated,
             sender="Student",
+            voice_url=voice_url,
         )
         message.to_db()
-        if self.context["previous"]["format"] == 'en_to_target':
-            asyncio.create_task(evaluate(message, self.user.vocabulary))
         if self.context["previous"]["format"] == 'en_to_target' or self.context["previous"]["format"] == 'transcribe':
-            if almost_equal(message.text, message.text_translated):
-                eval_message = f"✅ {previous.sentence_translated}"
-                asyncio.create_task(evaluate(message, self.user.vocabulary))
+            if message.text:
+                if almost_equal(message.text, message.text_translated):
+                    eval_message = f"✅ {previous.sentence_translated}"
+                else:
+                    eval_message = f"🤨 Correct: {previous.sentence_translated}"
             else:
-                eval_message = f"🤨 Correct: {previous.sentence_translated}"
-                self.context["todo"].insert(5, self.context["previous"])
+                eval_message = f"🦻 Correct: {previous.sentence_translated}"
         elif self.context["previous"]["format"] == 'target_to_en':
             if almost_equal(message.text, message.text_en):
                 eval_message = f"✅ {previous.sentence_en}"
@@ -528,7 +542,7 @@ class ExerciseSelectState(ConversationState):
         self.context["show_max"] += 10
         await self.reply_with_exercises()
 
-    async def respond(self, message_raw: str):
+    async def respond(self, message_raw: str, voice_url: str):
         try:
             selected = str(int(message_raw))
             if selected in self.context["available"]:

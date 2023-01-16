@@ -11,7 +11,7 @@ from gptcher.vocabulary import Vocabulary
 
 
 # @measure_time
-async def respond(user_id, message, reply_func):
+async def respond(user_id, message, voice_url, reply_func):
     """Respond to a message from a user.
 
     Loads the user history and the conversation state, and passes the message to the state.
@@ -25,7 +25,7 @@ async def respond(user_id, message, reply_func):
     """
     user_id = str(user_id) + "tmp4"
     user = User(user_id, reply_func=reply_func)
-    await user.state.respond(message)
+    await user.state.respond(message, voice_url)
 
 
 async def start_exercise(user_id, reply_func):
