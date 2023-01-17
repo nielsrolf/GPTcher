@@ -1,9 +1,8 @@
 from setuptools import find_packages, setup
 
-# with open("requirements.txt") as f:
-#     required = f.read().splitlines()
+with open("requirements.txt") as f:
+    required = f.read().splitlines()
 
-required = []
 setup(
     name="gptcher",
     version=0.1,

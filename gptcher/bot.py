@@ -6,12 +6,12 @@ While doing so, it can update the user or conversation state.
 
 Messages are connected to a session via the session ID.
 """
-from gptcher.main import STATES, ExerciseSelectState, supabase
+from gptcher.main import STATES, ExerciseSelectState, supabase, ConversationState
 from gptcher.vocabulary import Vocabulary
 
 
 # @measure_time
-async def respond(user_id, message, reply_func):
+async def respond(user_id, message, voice_url, reply_func):
     """Respond to a message from a user.
 
     Loads the user history and the conversation state, and passes the message to the state.
@@ -25,7 +25,7 @@ async def respond(user_id, message, reply_func):
     """
     user_id = str(user_id) + "tmp4"
     user = User(user_id, reply_func=reply_func)
-    await user.state.respond(message)
+    await user.state.respond(message, voice_url)
 
 
 async def start_exercise(user_id, reply_func):
@@ -42,6 +42,12 @@ async def start_exercise(user_id, reply_func):
     await user.enter_state(new_conversation)
 
 
+async def change_language(user_id, language, reply_func):
+    user_id = str(user_id) + "tmp4"
+    user = User(user_id, reply_func=reply_func)
+    await user.change_language(language)
+
+
 class User:
     """A user of the bot.
 
@@ -56,6 +62,13 @@ class User:
         self.state = None
         self.vocabulary = None
         self._load_state()
+    
+    async def change_language(self, language):
+        self.language = language
+        supabase.table("users").update({"language": language}).eq("user_id", self.user_id).execute()
+        self.vocabulary = Vocabulary(self, language)
+        new_conversation = ConversationState(self)
+        await self.enter_state(new_conversation)
 
     def _load_state(self):
         """Load the state of the user from the database.
@@ -81,8 +94,12 @@ class User:
                 .execute()
             )
         session = session_response.data[0]
-        self.state = STATES[session["type"]](self, session["id"], session["context"])
         self.vocabulary = Vocabulary.from_list(self, user_db["words"])
+        try:
+            self.state = STATES[session["type"]](self, session["id"], session["context"])
+        except:
+            self.enter_state(ConversationState(self))
+
 
     async def enter_state(self, state):
         """Set the state of the user.

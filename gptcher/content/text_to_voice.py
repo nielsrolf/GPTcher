@@ -80,7 +80,13 @@ def save_to_s3(filename):
 
 
 def create_for_all_existing():
-    tasks = supabase.from_("translation_tasks").select("*").execute().data
+    tasks = (
+        supabase.from_("translation_tasks")
+        .select("*")
+        .order("voice", nullsfirst=True)
+        .execute()
+        .data
+    )
     for task in tasks:
         if task["voice"] is None:
             voice_url = read_and_save_voice(
@@ -97,3 +103,4 @@ def create_for_all_existing():
 
 if __name__ == "__main__":
     create_for_all_existing()
+ 
