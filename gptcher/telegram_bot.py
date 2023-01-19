@@ -141,35 +141,6 @@ def speech_recognition_api_request(file_url, language_code):
     return out['modelOutputs'][0]['transcription'].strip()
 
 
-# async def speech(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     # Get the update object and extract the message and file_id
-#     update = update
-#     message = update.message
-#     file_id = message.voice.file_id
-#     # Use the bot to get the file object
-#     file = await context.bot.get_file(file_id)
-
-#     # Get the user
-
-#     async def reply_func(text):
-#         print(f"Bot: {text}\n")
-#         if text.startswith("http"):
-#             await context.bot.send_voice(
-#                 chat_id=update.effective_chat.id,
-#                 voice=text,
-#             )
-#         else:
-#             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-#     user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
-#     # Get the text from the audio file
-#     text = speech_recognition_api_request(file.file_path, code_of[user.language])
-#     await user.reply(f"Understood: {text}")
-#     print_times()
-#     # Reply
-#     update.message.text = text
-#     await respond(update, context)
-
-
 async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -196,6 +167,20 @@ async def set_german(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await bot.change_language(str(update.effective_chat.id), "German", reply_func=reply_func)
 
 
+async def set_spanish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    
+    await bot.change_language(str(update.effective_chat.id), "Spanish", reply_func=reply_func)
+
+
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("hello", hello))
@@ -207,9 +192,11 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("help", show_help))
     app.add_handler(CommandHandler("german", set_german))
     app.add_handler(CommandHandler("deutsch", set_german))
+    app.add_handler(CommandHandler("spanish", set_spanish))
+    app.add_handler(CommandHandler("espanol", set_spanish))
+
 
     app.add_handler(MessageHandler(filters.VOICE, respond))
-
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)
     app.add_handler(teach_handler)
     app.run_polling()

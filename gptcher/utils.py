@@ -40,6 +40,7 @@ def print_times():
 
 def complete_without_hash(prompt, stop, max_tokens=256):
     # print("Prompt:\n\n", prompt, "\n\nStop:", stop, "max tokens", max_tokens, "\n\n")
+    print("Prompt:\n\n", prompt)
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,
