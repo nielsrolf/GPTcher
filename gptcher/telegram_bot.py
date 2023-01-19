@@ -67,7 +67,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
     await bot.respond(
         str(update.effective_chat.id), update.message.text, voice_url=voice_url, reply_func=reply_func
@@ -90,7 +90,7 @@ async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
     user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
@@ -106,7 +106,7 @@ async def start_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
     user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
     new_conversation = ConversationState(user)
@@ -124,7 +124,7 @@ async def start_exercise_conversation(
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
     await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
 
@@ -162,7 +162,7 @@ async def set_german(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
     
     await bot.change_language(str(update.effective_chat.id), "German", reply_func=reply_func)
 
@@ -176,7 +176,7 @@ async def set_spanish(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
     
     await bot.change_language(str(update.effective_chat.id), "Spanish", reply_func=reply_func)
 

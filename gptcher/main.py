@@ -140,7 +140,7 @@ class ConversationState(Session):
         message.to_db()
     
     def render_for_user(self, message):
-        return f"{message.text} ({message.text_en})"
+        return f"<b>{message.text}</b>\n{message.text_en.strip()}"
     
     def render_for_dialogue(self, message):
         if message.sender == "Teacher":
@@ -163,7 +163,6 @@ class ConversationState(Session):
         prompt = prompt.replace("<intro_message>", self.render_for_dialogue(self.messages[0]))
         for message in self.messages:
             prompt += self.render_for_dialogue(message)
-            print(prompt)
         prompt += f"Student: {new_message.text}\nCorrected:"
         return prompt
 
@@ -191,23 +190,32 @@ class ConversationState(Session):
         )
         prompt = self.get_prompt(message)
         print(prompt)
-        completion = complete(prompt, prefix="", stop="Student:")
-        try:
-            if not "Teacher:" in completion:
-                completion = completion + "\n-\nTeacher:"
-                completion = complete(prompt, prefix=completion, stop="Student:")
-            if not "Translated:" in completion:
-                completion = completion + "\nTranslated:"
-                completion = complete(prompt, prefix=completion, stop="Student:")
-            corrected, completion = completion.split("\n-\nTeacher:")
-            response_translated, response_en = completion.split("\nTranslated:")
-            response_msg = MixedLanguageMessage(
-                response_translated, sender="Teacher", session=self.session, text_en=response_en, text_translated=response_translated
-            )
-        except Exception as e:
-            print(e)
-            breakpoint()
-        message.text_translated = corrected
+        override = False
+        for attempt in range(3):
+            completion = complete(prompt, prefix="", stop="Student:", override=override)
+            try:
+                if not "Teacher:" in completion:
+                    completion = completion + "\n-\nTeacher:"
+                    completion = complete(prompt, prefix=completion, stop="Student:")
+                if not "Translated:" in completion:
+                    completion = completion + "\nTranslated:"
+                    completion = complete(prompt, prefix=completion, stop="Student:")
+                original_completion = completion
+                corrected, completion = completion.split("\n-\nTeacher:")
+                response_translated, response_en = completion.split("\nTranslated:")
+                response_msg = MixedLanguageMessage(
+                    response_translated.strip(), sender="Teacher", session=self.session, text_en=response_en.strip(), text_translated=response_translated.strip()
+                )
+                break
+            except Exception as e:
+                override = True
+                print(e)
+                print("---")
+                print(prompt)
+                print(original_completion)
+                if attempt == 2:
+                    await self.user.reply("Oops, something went wrong. Please try again.")
+        message.text_translated = corrected.strip()
         message.to_db()
         if not almost_equal(message.text, corrected):
             await self.user.reply(f"Corrected: {corrected}")
