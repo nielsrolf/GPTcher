@@ -8,6 +8,8 @@ Messages are connected to a session via the session ID.
 """
 from gptcher.main import STATES, ExerciseSelectState, supabase, ConversationState
 from gptcher.vocabulary import Vocabulary
+from gptcher.settings import table_prefix
+
 
 
 # @measure_time
@@ -65,7 +67,7 @@ class User:
     
     async def change_language(self, language):
         self.language = language
-        supabase.table("users").update({"language": language}).eq("user_id", self.user_id).execute()
+        supabase.table(table_prefix + "users").update({"language": language}).eq("user_id", self.user_id).execute()
         self.vocabulary = Vocabulary(self, language)
         new_conversation = ConversationState(self)
         await self.enter_state(new_conversation)
@@ -76,7 +78,7 @@ class User:
         If the user is new, the default state is returned.
         """
         user_db = (
-            supabase.table("users").upsert({"user_id": self.user_id}).execute().data[0]
+            supabase.table(table_prefix + "users").upsert({"user_id": self.user_id}).execute().data[0]
         )
         print("session", user_db["session"])
         self.language = user_db["language"]
@@ -84,11 +86,11 @@ class User:
         is_new_user = user_db["session"] is None
         if is_new_user:
             session_response = (
-                supabase.table("session").insert({"user_id": self.user_id}).execute()
+                supabase.table(table_prefix + "session").insert({"user_id": self.user_id}).execute()
             )
         else:
             session_response = (
-                supabase.table("session")
+                supabase.table(table_prefix + "session")
                 .select("*")
                 .eq("id", user_db["session"])
                 .execute()
@@ -108,20 +110,20 @@ class User:
             state: The state to set.
         """
         self.state = state
-        supabase.table("session").upsert(
+        supabase.table(table_prefix + "session").upsert(
             {
                 "id": state.session,
                 "type": state.__class__.__name__,
                 "user_id": self.user_id,
             }
         ).execute()
-        supabase.table("users").update({"session": state.session}).eq(
+        supabase.table(table_prefix + "users").update({"session": state.session}).eq(
             "user_id", self.user_id
         ).execute()
         print("Entered state", state.__class__.__name__, state.session)
         await state.start()
         # save context
-        supabase.table("session").update({"context": state.context}).eq(
+        supabase.table(table_prefix + "session").update({"context": state.context}).eq(
             "id", state.session
         ).execute()
 

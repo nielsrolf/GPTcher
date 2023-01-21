@@ -5,6 +5,8 @@ import os
 import openai
 from dotenv import load_dotenv
 from supabase import create_client
+from gptcher.settings import table_prefix
+
 
 load_dotenv(override=True)
 openai.api_key = os.getenv("OPENAI_API_KEY")

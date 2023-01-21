@@ -8,9 +8,10 @@ import random
 from gptcher.content.creator import Exercise, TranslationTask, load_all_exercises
 from gptcher.evaluate import almost_equal, evaluate
 from gptcher.language_codes import code_of
-from gptcher.utils import complete, supabase, complete_and_parse_json
+from gptcher.gpt_client import complete, supabase, complete_and_parse_json
 from gptcher.content.text_to_voice import read_and_save_voice
 from gptcher.content.voice_to_text import transcribe
+from gptcher.settings import table_prefix
 
 
 class MixedLanguageMessage:
@@ -54,7 +55,7 @@ class MixedLanguageMessage:
             "session": self.session,
             "evaluation": self.evaluation,
         }
-        supabase.table("messages").insert(data).execute()
+        supabase.table(table_prefix + "messages").insert(data).execute()
 
 
 class Session:
@@ -78,7 +79,7 @@ class Session:
     def messages(self):
         """Fetch all messages from the database that correspond to the session."""
         messages_db = (
-            supabase.table("messages")
+            supabase.table(table_prefix + "messages")
             .select("*")
             .eq("session", self.session)
             .order("created_at")
@@ -402,7 +403,7 @@ class ExerciseState:
         """
         score = 10 * len(self.exercise.translation_tasks)
         await self.user.reply(f"You finished the exercise! You earned {score} points.")
-        supabase.table("finished_exercises").insert(
+        supabase.table(table_prefix + "finished_exercises").insert(
             [
                 {
                     "session_id": self.session,
@@ -446,13 +447,13 @@ class ExerciseState:
             c_previous = dict(**self.context["previous"])
             async def on_fail():
                 self.context["todo"].insert(5, c_previous)
-                supabase.table("session").update({"context": self.context}).eq(
+                supabase.table(table_prefix + "session").update({"context": self.context}).eq(
                     "id", self.session
                 ).execute()
             asyncio.create_task(evaluate(message, self.user.vocabulary, on_fail))
         
         self.context['previous'] = next_task
-        supabase.table("session").update({"context": self.context}).eq(
+        supabase.table(table_prefix + "session").update({"context": self.context}).eq(
             "id", self.session
         ).execute()
         message = MixedLanguageMessage(
@@ -542,7 +543,7 @@ class ExerciseSelectState(ConversationState):
     async def start(self):
         language = self.user.language
         exercises = (
-            supabase.table("exercises")
+            supabase.table(table_prefix + "exercises")
             .select("*")
             .eq("language", language)
             .is_("user_id", 'null')
@@ -551,7 +552,7 @@ class ExerciseSelectState(ConversationState):
         )
         # Get all done exercises
         done_exercises = (
-            supabase.table("finished_exercises")
+            supabase.table(table_prefix + "finished_exercises")
             .select("*")
             .eq("user_id", self.user.user_id)
             .execute()
@@ -591,7 +592,7 @@ class ExerciseSelectState(ConversationState):
         await self.user.reply(
             "Select one by sending the number of the exercise or ask for more with any other reply"
         )
-        supabase.table("session").update({"context": self.context}).eq(
+        supabase.table(table_prefix + "session").update({"context": self.context}).eq(
             "id", self.session
         ).execute()
 

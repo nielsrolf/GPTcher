@@ -1,5 +1,5 @@
 from gptcher.language_codes import code_of
-from gptcher.utils import measure_time, print_times
+from gptcher.gpt_client import measure_time, print_times
 import os
 import banana_dev as banana
 from dotenv import load_dotenv

@@ -5,8 +5,10 @@ import pandas as pd
 from functools import cache
 import random
 from dotenv import load_dotenv
-from gptcher.utils import hash_string, supabase
+from gptcher.gpt_client import hash_string, supabase
 import io
+from gptcher.settings import table_prefix
+
 
 load_dotenv(override=True)
 
@@ -92,7 +94,7 @@ def create_for_all_existing():
             voice_url = read_and_save_voice(
                 task["sentence_translated"], task["language"]
             )
-            supabase.table("translation_tasks").update({"voice": voice_url}).eq(
+            supabase.table(table_prefix + "translation_tasks").update({"voice": voice_url}).eq(
                 "id", task["id"]
             ).execute()
             print(f"created voice for {task['id']}: {voice_url}")

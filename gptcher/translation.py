@@ -3,8 +3,26 @@ import requests
 import json
 from gptcher.language_codes import code_of
 
+from google.cloud import translate_v2 as translate
 
-def translate(text, target_language):
+
+def _google_translate(target_language, text):
+    """Translates text into the target language.
+
+    Target must be an ISO 639-1 language code.
+    See https://g.co/cloud/translate/v2/translate-reference#supported_languages
+    """
+    print(f"Translating {text} to {target_language}...")
+    if len(target_language) < 4:
+        target_language = code_of[target_language]
+    translate_client = translate.Client()
+    # Text can also be a sequence of strings, in which case this method
+    # will return a sequence of results for each text.
+    result = translate_client.translate(text, target_language=target_language)
+    return result["translatedText"]
+
+
+def _deepl_translate(target_language, text):
     language_code = code_of[target_language]
     target_lang = language_code.split("-")[0].upper()
 
@@ -16,9 +34,6 @@ def translate(text, target_language):
     data = json.dumps(payload)
     response = requests.post(url, headers=headers, data=data)
 
-    print(response.status_code)
-    print(response.text)
-
     data = response.json()
 
     translations = []
@@ -27,5 +42,8 @@ def translate(text, target_language):
     return translations
 
 
-
-print(translate(input("Enter text to translate: "), "German"))
+def translate(text, target_language):
+    try:
+        return _deepl_translate(target_language, text)
+    except:
+        return [_google_translate(target_language, text)]

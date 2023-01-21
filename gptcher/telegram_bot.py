@@ -15,16 +15,8 @@ from telegram.ext import (
 from gptcher import bot
 from gptcher.main import ConversationState, VocabTrainingState
 from gptcher.language_codes import code_of
-from gptcher.utils import measure_time, print_times
-
-load_dotenv(override=True)
-is_prod = os.getenv("IS_PROD") == "True"
-if is_prod:
-    print("Running in production mode")
-    token = os.getenv("TELEGRAM_TOKEN_PROD")
-else:
-    print("Running in development mode")
-    token = os.getenv("TELEGRAM_TOKEN_DEV")
+from gptcher.gpt_client import measure_time, print_times
+from gptcher.settings import token
 
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

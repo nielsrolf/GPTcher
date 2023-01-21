@@ -5,7 +5,7 @@ import openai
 from dotenv import load_dotenv
 from unidecode import unidecode
 
-from gptcher.utils import complete_and_parse_json
+from gptcher.gpt_client import complete_and_parse_json
 from gptcher.content.voice_to_text import transcribe
 
 load_dotenv()
