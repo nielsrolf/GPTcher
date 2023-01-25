@@ -25,7 +25,7 @@ async def respond(user_id, message, voice_url, reply_func):
     Returns:
         A response to the message.
     """
-    user_id = str(user_id) + "tmp4"
+    user_id = str(user_id) 
     user = User(user_id, reply_func=reply_func)
     await user.state.respond(message, voice_url)
 
@@ -36,7 +36,7 @@ async def start_exercise(user_id, reply_func):
     Args:
         user_id: The ID of the user.
     """
-    user_id = str(user_id) + "tmp4"
+    user_id = str(user_id) 
     user = User(user_id, reply_func=reply_func)
     new_conversation = ExerciseSelectState(
         user,
@@ -45,7 +45,7 @@ async def start_exercise(user_id, reply_func):
 
 
 async def change_language(user_id, language, reply_func):
-    user_id = str(user_id) + "tmp4"
+    user_id = str(user_id) 
     user = User(user_id, reply_func=reply_func)
     await user.change_language(language)
 

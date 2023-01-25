@@ -84,7 +84,7 @@ async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
-    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
+    user = bot.User(str(update.effective_chat.id) , reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
     await user.enter_state(new_conversation)
 
@@ -100,7 +100,7 @@ async def start_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
-    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
+    user = bot.User(str(update.effective_chat.id) , reply_func=reply_func)
     new_conversation = ConversationState(user)
     await user.enter_state(new_conversation)
 
