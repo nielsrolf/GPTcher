@@ -162,7 +162,7 @@ class ConversationState(Session):
         prompt = conversation_state_prompt
         prompt = prompt.replace("<language>", self.user.language)
         prompt = prompt.replace("<intro_message>", self.render_for_dialogue(self.messages[0]))
-        for message in self.messages:
+        for message in self.messages[:-5]:
             prompt += self.render_for_dialogue(message)
         prompt += f"Student: {new_message.text}\nCorrected:"
         return prompt
@@ -217,7 +217,6 @@ class ConversationState(Session):
                 if attempt == 2:
                     await self.user.reply("Oops, something went wrong. Please try again.")
         message.text_translated = corrected.strip()
-        message.to_db()
         if not almost_equal(message.text, corrected):
             await self.user.reply(f"Corrected: {corrected}")
         await self.user.reply(self.render_for_user(response_msg))
@@ -229,15 +228,15 @@ class ConversationState(Session):
 welcome_message = """Hola! I'm a language tutor bot.
 Send me a message in English or Spanish or a mixture of both and I'll correct it and respond to it!
 
-By using correct words you improve your score. You can see your score with /score.
+By using correct words you improve your score. You can't see your score yet because this features still needs some work :)
 
 You can also start one of many exercises with /train or train the words you know with /vocab.
 
 Don't send private information to me - your messages are sent to other APIs.
 
-We would love to hear your feedback - send it to @nielsrolf on telegram or @GPTcher on twitter.
+We would love to hear your feedback - join our discord https://discord.gg/7yTjrVjQ
 
-If you like this bot, please consider donating to my patreon: patreon.com/user?u=55105539"""
+If you like this bot, consider donating to our patreon: patreon.com/user?u=55105539"""
 
 
 if os.getenv("IS_PROD") != "True":
