@@ -39,6 +39,7 @@ class MixedLanguageMessage:
         self.voice_url = voice_url
         self.session = session
         self.evaluation = evaluation
+        self.id = id
 
         if created_at:
             self.created_at = created_at
@@ -55,7 +56,10 @@ class MixedLanguageMessage:
             "session": self.session,
             "evaluation": self.evaluation,
         }
-        supabase.table(table_prefix + "messages").insert(data).execute()
+        if self.id:
+            data["id"] = self.id
+        data = supabase.table(table_prefix + "messages").upsert(data).execute().data[0]
+        self.id = data["id"]
 
 
 class Session:
@@ -162,7 +166,7 @@ class ConversationState(Session):
         prompt = conversation_state_prompt
         prompt = prompt.replace("<language>", self.user.language)
         prompt = prompt.replace("<intro_message>", self.render_for_dialogue(self.messages[0]))
-        for message in self.messages[:-5]:
+        for message in self.messages[-5:]:
             prompt += self.render_for_dialogue(message)
         prompt += f"Student: {new_message.text}\nCorrected:"
         return prompt
@@ -202,7 +206,12 @@ class ConversationState(Session):
                     completion = completion + "\nTranslated:"
                     completion = complete(prompt, prefix=completion, stop="Student:")
                 original_completion = completion
-                corrected, completion = completion.split("\n-\nTeacher:")
+                try:
+                    corrected, completion = completion.split("\n-\nTeacher:")
+                except:
+                    corrected, completion = completion.split("Teacher:")
+                    corrected = corrected.strip()
+                    completion = completion.strip()
                 response_translated, response_en = completion.split("\nTranslated:")
                 response_msg = MixedLanguageMessage(
                     response_translated.strip(), sender="Teacher", session=self.session, text_en=response_en.strip(), text_translated=response_translated.strip()
@@ -217,6 +226,7 @@ class ConversationState(Session):
                 if attempt == 2:
                     await self.user.reply("Oops, something went wrong. Please try again.")
         message.text_translated = corrected.strip()
+        message.to_db()
         if not almost_equal(message.text, corrected):
             await self.user.reply(f"Corrected: {corrected}")
         await self.user.reply(self.render_for_user(response_msg))
