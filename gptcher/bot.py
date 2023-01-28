@@ -88,14 +88,21 @@ class User:
             session_response = (
                 supabase.table(table_prefix + "session").insert({"user_id": self.user_id}).execute()
             )
+            session = session_response.data[0]
         else:
-            session_response = (
-                supabase.table(table_prefix + "session")
-                .select("*")
-                .eq("id", user_db["session"])
-                .execute()
-            )
-        session = session_response.data[0]
+            try:
+                session_response = (
+                    supabase.table(table_prefix + "session")
+                    .select("*")
+                    .eq("id", user_db["session"])
+                    .execute()
+                )
+                session = session_response.data[0]
+            except:
+                session_response = (
+                    supabase.table(table_prefix + "session").insert({"user_id": self.user_id}).execute()
+                )
+                session = session_response.data[0]
         self.vocabulary = Vocabulary.from_list(self, user_db["words"])
         try:
             self.state = STATES[session["type"]](self, session["id"], session["context"])
