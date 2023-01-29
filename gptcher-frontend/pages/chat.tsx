@@ -1,17 +1,21 @@
 import { Auth, ThemeSupa } from '@supabase/auth-ui-react'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
-import Account from '../components/Account'
+import Chat from '../components/Chat'
+import Menu from '../components/Menu'
 
 const Home = () => {
   const session = useSession()
   const supabase = useSupabaseClient()
 
+  console.log({ session, supabase })
+
   return (
-    <div className="container" style={{ padding: '50px 0 100px 0' }}>
+    <div id="content">
+      <Menu session={session} supabase={supabase} />
       {!session ? (
         <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} theme="dark" />
       ) : (
-        <Account session={session} />
+        <Chat session={session} />
       )}
     </div>
   )

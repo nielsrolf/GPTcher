@@ -1,20 +1,19 @@
 import { Auth, ThemeSupa } from '@supabase/auth-ui-react'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
-import Account from '../components/Account'
+import Menu from '../components/Menu'
 
-const Home = () => {
+const About = () => {
   const session = useSession()
   const supabase = useSupabaseClient()
 
+  console.log({ session, supabase })
+
   return (
-    <div className="container" style={{ padding: '50px 0 100px 0' }}>
-      {!session ? (
-        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} theme="dark" />
-      ) : (
-        <Account session={session} />
-      )}
+    <div id="content">
+      <Menu session={session} supabase={supabase} />
+      <h1>About GPTcher</h1>
     </div>
   )
 }
 
-export default Home
+export default About

@@ -1,7 +1,7 @@
 import { Auth, ThemeSupa } from '@supabase/auth-ui-react'
 import { useSession, useSupabaseClient } from '@supabase/auth-helpers-react'
-import Account from '../components/Account'
 import Menu from '../components/Menu'
+import DemoCarousel from '@/components/DemoCarousel';
 
 const Home = () => {
   const session = useSession()
@@ -10,13 +10,12 @@ const Home = () => {
   console.log({ session, supabase })
 
   return (
-    <div className="container" style={{ padding: '50px 0 100px 0' }}>
+    <div id='content-wide'>
       <Menu session={session} supabase={supabase} />
-      {!session ? (
-        <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} theme="dark" />
-      ) : (
-        <Account session={session} />
-      )}
+      <img src="/Logo_klein.svg" alt="GPTcher Logo" style={{float: 'left', width: '30vw'}} />
+      <h1>GPTcher</h1>
+      <h2>Hola I'm a language tutor bot</h2>
+      <DemoCarousel />
     </div>
   )
 }
