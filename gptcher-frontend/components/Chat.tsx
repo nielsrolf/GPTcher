@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import config from '../config';
+import parse from 'html-react-parser';
+
 
 
 
@@ -22,6 +24,13 @@ const Chat: React.FC = ({ session, supabase }: any) => {
   }, []);
 
   const handleSendMessage = async () => {
+    const userMessage = {
+        'text': text,
+        'sender': 'Student',
+        'id': Math.random()
+    }
+    setMessages([...messages, userMessage]);
+    setText('')
     const response =await fetch(`${config.backendUrl}/chat`, {
       method: 'POST',
       headers: {
@@ -31,7 +40,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
       body: JSON.stringify({ text }),
     });
     const data = await response.json();
-    setMessages(data);
+    setMessages([...messages, userMessage, ...data]);
     setText('');
   };
 
@@ -47,7 +56,9 @@ const Chat: React.FC = ({ session, supabase }: any) => {
       <div className="messages-container">
         {messages.map((message) => (
           <div key={message.id} className={`message-container ${message.sender === 'Teacher' ? 'teacher-message' : 'student-message'}`}>
-            <p>{message.text}</p>
+            <div>
+                {parse(message.text.replace('</b>', '</b><hr>'))}
+            </div>
           </div>
         ))}
       </div>

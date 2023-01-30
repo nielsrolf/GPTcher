@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Union
+from gptcher import bot
 
 from gptcher_api.authentication import TokenPayload, get_current_user
 
@@ -17,16 +18,16 @@ app = FastAPI()
 
 class Message(BaseModel):
     text: str
-    # user_id: Optional[str] = None
-    # sender: Optional[str] = None
-    # text_en: Optional[str] = None
-    # text_translated: Optional[str] = None
-    # voice_url: Optional[str] = None
-    # session: Optional[str] = None
-    # created_at: Optional[str] = None
-    # updated_at: Optional[str] = None
-    # id: Optional[Union[str, int]] = None
-    # evaluation: Optional[Dict] = None
+    user_id: Optional[str] = None
+    sender: Optional[str] = None
+    text_en: Optional[str] = None
+    text_translated: Optional[str] = None
+    voice_url: Optional[str] = None
+    session: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    id: Optional[Union[str, int]] = None
+    evaluation: Optional[Dict] = None
 
 
 app = FastAPI()
@@ -62,12 +63,12 @@ async def whoami(user: TokenPayload = Depends(get_current_user)):
 async def send_message(
     message: Message, user: TokenPayload = Depends(get_current_user)
 ) -> List[Message]:
-    messages = [
-        Message(id=1, text='hi'),
-        Message(id=2, text='hello'),
-        message
-    ]
-
+    messages = []
+    async def reply_func(text):
+        messages.append(Message(text=text, sender='Teacher'))
+    await bot.respond(
+        str(user.sub) + "-1", message.text, voice_url=None, reply_func=reply_func
+    )
     return messages
 
 
@@ -75,10 +76,17 @@ async def send_message(
 async def send_message(
     user: TokenPayload = Depends(get_current_user)
 ) -> List[Message]:
+    messages = []
+    async def reply_func(text):
+        messages.append(Message(text=text, sender='Teacher'))
+    bot_user = bot.User(str(user.sub)  + "-1", reply_func=reply_func)
     messages = [
-        Message(id=1, text='hi'),
-        Message(id=2, text='hello'),
+        Message(**i.__dict__) for i in bot_user.state.messages
     ]
+    if len(messages) == 0:
+        await bot.respond(
+            str(user.sub) + "-1", '/start', voice_url=None, reply_func=reply_func
+        )
     return messages
 
 
