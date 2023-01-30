@@ -10,7 +10,7 @@ const Home = () => {
   console.log({ session, supabase })
 
   return (
-    <div id="content">
+    <div id="content-wide">
       <Menu session={session} supabase={supabase} />
       {!session ? (
         <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} theme="dark" />

@@ -9,7 +9,7 @@ const About = () => {
   console.log({ session, supabase })
 
   return (
-    <div id="content">
+    <div id="content-wide">
       <Menu session={session} supabase={supabase} />
       <h1>About GPTcher</h1>
     </div>

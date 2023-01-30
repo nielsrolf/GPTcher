@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import config from '../config';
 
 
+
 const Chat: React.FC = ({ session, supabase }: any) => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -42,12 +43,18 @@ const Chat: React.FC = ({ session, supabase }: any) => {
   }, [messages]);
 
   return (
-    <div>
-      {messages.map((message) => (
-        <p key={message.id}>{message.text}</p>
-      ))}
-      <input value={text} onChange={(e) => setText(e.target.value)} />
-      <button onClick={handleSendMessage}>Send</button>
+    <div className="chat-container">
+      <div className="messages-container">
+        {messages.map((message) => (
+          <div key={message.id} className={`message-container ${message.sender === 'Teacher' ? 'teacher-message' : 'student-message'}`}>
+            <p>{message.text}</p>
+          </div>
+        ))}
+      </div>
+      <div className="input-container">
+        <textarea className="input-text-area" value={text} onChange={(e) => setText(e.target.value)} />
+        <button onClick={handleSendMessage}>Send</button>
+      </div>
     </div>
   );
 };
