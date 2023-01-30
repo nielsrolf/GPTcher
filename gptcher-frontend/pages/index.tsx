@@ -13,6 +13,9 @@ const Home = () => {
       <img src="/Logo_klein.svg" alt="GPTcher Logo" style={{float: 'left', width: '30vw'}} />
       <h1>GPTcher</h1>
       <h2>Hola I'm a language tutor bot</h2>
+      <p>
+        Learn by conversing with an AI teacher, do exercises, train your vocabulary and give us feedback! This project is in beta, so please be patient with us.
+      </p>
       <DemoCarousel />
     </div>
   )

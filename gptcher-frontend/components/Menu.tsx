@@ -9,8 +9,8 @@ const Menu = ({ session, supabase }: any) => {
   }
 
   return (
-    <nav>
-      <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+    <nav className={menuOpen ? 'expanded' : 'default'}>
+      <button className="menu-toggle first-item" onClick={() => setMenuOpen(!menuOpen)}>
         <img src="/GPTcher_Face_White.svg" alt="menu"  style={{height: '50px', width: '50px'}}/>
       </button>
       <Link href="/" className={menuOpen ? 'menu-open' : 'menu-closed'}>
@@ -22,10 +22,13 @@ const Menu = ({ session, supabase }: any) => {
             Chat
           </Link>
           <Link href="/training" className={menuOpen ? 'menu-open' : 'menu-closed'}>
-            Training
+            Exercises
           </Link>
           <Link href="/about" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             About
+          </Link>
+          <Link href="/about" className={menuOpen ? 'menu-open' : 'menu-closed'}>
+            Donate
           </Link>
           <a onClick={handleSignOut} className={menuOpen ? 'menu-open' : 'menu-closed'}>Sign out</a>
         </>

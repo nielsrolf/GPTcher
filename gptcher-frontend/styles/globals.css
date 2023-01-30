@@ -7,6 +7,10 @@ body {
   background-color: black;
   color: white;
   font-family: 'Audiowide', serif;
+  background-image: url('/background.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 #content {
@@ -21,6 +25,7 @@ body {
   padding-left: 50px;
   padding-right: 50px;
   padding-top: 50px;
+  min-height: 100vh;
 }
 
 .image-rounded {
@@ -31,29 +36,53 @@ body {
 }
 /* Set the menu links to be in a single column by default */
 nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 10vh;
   display: flex;
   flex-wrap: nowrap;
   justify-content: flex-end;
   align-items: center;
-  padding: 20px;
-  background-color: black;
   color: white;
 }
+@media (min-width: 1001px) {
+  nav {
+    background-color: black;
+  }
+}
+
 
 /* Change the menu links to be in multiple columns on small screens */
 @media (max-width: 1000px) {
-  nav {
+  nav.default {
     position: absolute;
     top: 0;
     right: 0;
+    min-height: 10vh;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    padding: 10px;
     background-color: black;
     color: white;
     border: 1px solid white;
   }
+  nav.expanded {
+    position: fixed;
+    top: 10vh;
+    right: 0px;
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* distribute space between items */
+    align-items: center; /* aligns items to center of cross axis */
+    z-index: 1;
+  }
+  nav.expanded .first-item {
+    position: fixed;
+    top: 0px; /* adjust as needed */
+    right: 0px; /* adjust as needed */
+    height: 10vh;
+    /* width: 60px; */
+}
   .menu-link {
     text-align: right;
     margin:10px 0;
@@ -61,6 +90,9 @@ nav {
   }
   .menu-open {
     padding: 10px;
+    background-color: black;
+    color: white;
+    border: 1px solid white;
   }
 }
 
@@ -90,7 +122,7 @@ nav button {
 }
 
 /* Show the toggle button and menu links on small screens */
-@media (max-width: 600px) {
+@media (max-width: 1000px) {
   .menu-toggle {
     display: block;
   }
@@ -100,7 +132,7 @@ nav button {
 }
 
 /* Show the menu links and hide the toggle button on large screens */
-@media (min-width: 601px) {
+@media (min-width: 1001px) {
   .menu-toggle {
     display: none;
   }
@@ -111,23 +143,28 @@ nav button {
 
 
 .chat-container {
-  max-width: 1000px;
+  position: absolute;
+  top: 100px;
+  min-height: calc(100vh - 100px);
+  min-width: 80vw;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  min-height: 80vh;
+  justify-content: space-between;
   padding-left: 50px;
   padding-right: 50px;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
-.messages-container {
-  overflow-y: scroll;
-  height: 80%;
+p {
+  font-size: 25px;
 }
 
+
 .message-container {
+  overflow-y: scroll;
+  height: 80%;
+  width: 100%;
   padding: 10px;
   border-radius: 10px;
   margin-bottom: 10px;
@@ -144,12 +181,40 @@ nav button {
 
 .input-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
   flex-direction: column;
+  width: 100%;
 }
 
 .input-text-area {
-  width: 100%;
   border-radius: 10px;
 }
+/* 
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(100vh - 100px);
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: scroll;
+  border-radius: 10px;
+}
+.teacher-message {
+  background-color: white;
+}
+
+.student-message {
+  background-color: grey;
+}
+
+.input-container {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+} */
+
