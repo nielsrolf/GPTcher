@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Union
 from gptcher import bot
+from gptcher.main import ConversationState
 
 from gptcher_api.authentication import TokenPayload, get_current_user
 
@@ -67,8 +68,21 @@ async def send_message(
     async def reply_func(text):
         messages.append(Message(text=text, sender='Teacher'))
     await bot.respond(
-        str(user.sub) + "-1", message.text, voice_url=None, reply_func=reply_func
+        str(user.sub), message.text, voice_url=None, reply_func=reply_func
     )
+    return messages
+
+
+@app.get("/clearchat")
+async def send_message(
+    user: TokenPayload = Depends(get_current_user)
+) -> List[Message]:
+    messages = []
+    async def reply_func(text):
+        messages.append(Message(text=text, sender='Teacher'))
+    bot_user = bot.User(str(user.sub) , reply_func=reply_func)
+    new_conversation = ConversationState(bot_user)
+    await bot_user.enter_state(new_conversation)
     return messages
 
 
@@ -79,13 +93,13 @@ async def send_message(
     messages = []
     async def reply_func(text):
         messages.append(Message(text=text, sender='Teacher'))
-    bot_user = bot.User(str(user.sub)  + "-1", reply_func=reply_func)
+    bot_user = bot.User(str(user.sub) , reply_func=reply_func)
     messages = [
         Message(**i.__dict__) for i in bot_user.state.messages
     ]
     if len(messages) == 0:
         await bot.respond(
-            str(user.sub) + "-1", '/start', voice_url=None, reply_func=reply_func
+            str(user.sub), '/start', voice_url=None, reply_func=reply_func
         )
     return messages
 

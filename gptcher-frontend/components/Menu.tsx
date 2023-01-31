@@ -27,7 +27,7 @@ const Menu = ({ session, supabase }: any) => {
           <Link href="/about" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             About
           </Link>
-          <Link href="/about" className={menuOpen ? 'menu-open' : 'menu-closed'}>
+          <Link href="/donate" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             Donate
           </Link>
           <a onClick={handleSignOut} className={menuOpen ? 'menu-open' : 'menu-closed'}>Sign out</a>
@@ -36,6 +36,9 @@ const Menu = ({ session, supabase }: any) => {
         <>
           <Link href="/about" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             About
+          </Link>
+          <Link href="/donate" className={menuOpen ? 'menu-open' : 'menu-closed'}>
+            Donate
           </Link>
           <Link href="/chat" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             Sign in / Sign up

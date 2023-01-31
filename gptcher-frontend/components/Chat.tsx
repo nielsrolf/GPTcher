@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import config from '../config';
 import parse from 'html-react-parser';
 
@@ -8,6 +8,11 @@ import parse from 'html-react-parser';
 const Chat: React.FC = ({ session, supabase }: any) => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  }, []);
   
   useEffect(() => {
     async function fetchChatHistory() {
@@ -19,6 +24,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
         }});
       const data = await response.json();
       setMessages(data);
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
     fetchChatHistory();
   }, []);
@@ -44,6 +50,16 @@ const Chat: React.FC = ({ session, supabase }: any) => {
     setText('');
   };
 
+  const clearChat = async () => {
+    const response = await fetch(`${config.backendUrl}/clearchat`, {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json'
+    }});
+    const data = await response.json();
+    setMessages(data);
+  };
+
   useEffect(() => {
     const handleNewMessage = (newMessage: any) => {
       setMessages([...messages, newMessage]);
@@ -53,6 +69,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
 
   return (
     <div className="chat-container">
+      <button onClick={clearChat}>Clear chat</button>
       <div className="messages-container">
         {messages.map((message) => (
           <div key={message.id} className={`message-container ${message.sender === 'Teacher' ? 'teacher-message' : 'student-message'}`}>
@@ -62,7 +79,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
           </div>
         ))}
       </div>
-      <div className="input-container">
+      <div className="input-container" ref={chatEndRef}>
         <textarea className="input-text-area" value={text} onChange={(e) => setText(e.target.value)} />
         <button onClick={handleSendMessage}>Send</button>
       </div>
