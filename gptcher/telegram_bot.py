@@ -13,7 +13,7 @@ from telegram.ext import (
 )
 
 from gptcher import bot
-from gptcher.main import ConversationState, VocabTrainingState
+from gptcher.main import ConversationState, VocabTrainingState, WelcomeUser
 from gptcher.language_codes import code_of
 from gptcher.gpt_client import measure_time, print_times
 from gptcher.settings import token
@@ -105,6 +105,22 @@ async def start_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await user.enter_state(new_conversation)
 
 
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
+
+    user = bot.User(str(update.effective_chat.id) , reply_func=reply_func)
+    new_conversation = WelcomeUser(user)
+    await user.enter_state(new_conversation)
+
+
 async def start_exercise_conversation(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ):
@@ -176,7 +192,7 @@ async def set_spanish(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("hello", hello))
-    app.add_handler(CommandHandler("start", respond))
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("donate", donate))
     app.add_handler(CommandHandler("train", start_exercise_conversation))
     app.add_handler(CommandHandler("vocab", start_vocab))
