@@ -6,29 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Union
 from gptcher import bot
-from gptcher.main import ConversationState
+from gptcher.main import ConversationState, WelcomeUser
 
 from gptcher_api.authentication import TokenPayload, get_current_user
+from gptcher_api.db_client import supabase
+from gptcher_api.schema import Message
+from gptcher.settings import is_prod, table_prefix
 
 
 load_dotenv()
-
-
-app = FastAPI()
-
-
-class Message(BaseModel):
-    text: str
-    user_id: Optional[str] = None
-    sender: Optional[str] = None
-    text_en: Optional[str] = None
-    text_translated: Optional[str] = None
-    voice_url: Optional[str] = None
-    session: Optional[str] = None
-    created_at: Optional[str] = None
-    updated_at: Optional[str] = None
-    id: Optional[Union[str, int]] = None
-    evaluation: Optional[Dict] = None
 
 
 app = FastAPI()
@@ -55,53 +41,67 @@ async def root():
     return {"healthy": "yes"}
 
 
-@app.get("/user")
-async def whoami(user: TokenPayload = Depends(get_current_user)):
-    return user
+# @app.get("/user")
+# async def whoami(user: TokenPayload = Depends(get_current_user)):
+#     return user
 
 
 @app.post("/chat")
 async def send_message(
     message: Message, user: TokenPayload = Depends(get_current_user)
 ) -> List[Message]:
-    messages = []
-    async def reply_func(text):
-        messages.append(Message(text=text, sender='Teacher'))
     await bot.respond(
-        str(user.sub), message.text, voice_url=None, reply_func=reply_func
+        user.user_id, message.text, voice_url=None, reply_func=user.reply
     )
-    return messages
+    # get student message and append to the beginning
+    student_message = [i for i in user.state.messages if i.sender == 'Student'][-1]
+    user.new_messages.insert(0, Message(**student_message.__dict__))
+    return user.new_messages
 
 
 @app.get("/clearchat")
 async def send_message(
-    user: TokenPayload = Depends(get_current_user)
+    user: bot.User = Depends(get_current_user)
 ) -> List[Message]:
-    messages = []
-    async def reply_func(text):
-        messages.append(Message(text=text, sender='Teacher'))
-    bot_user = bot.User(str(user.sub) , reply_func=reply_func)
-    new_conversation = ConversationState(bot_user)
-    await bot_user.enter_state(new_conversation)
-    return messages
+    new_conversation = WelcomeUser(user)
+    await user.enter_state(new_conversation)
+    return user.new_messages
 
 
 @app.get("/chat")
-async def send_message(
-    user: TokenPayload = Depends(get_current_user)
+async def get_history(
+    user: bot.User = Depends(get_current_user)
 ) -> List[Message]:
-    messages = []
-    async def reply_func(text):
-        messages.append(Message(text=text, sender='Teacher'))
-    bot_user = bot.User(str(user.sub) , reply_func=reply_func)
     messages = [
-        Message(**i.__dict__) for i in bot_user.state.messages
+        Message(**i.__dict__) for i in user.state.messages
     ]
     if len(messages) == 0:
         await bot.respond(
-            str(user.sub), '/start', voice_url=None, reply_func=reply_func
+            user.user_id, '/start', voice_url=None, reply_func=user.reply
         )
+        messages = user.new_messages
     return messages
+
+
+@app.get("/exercises")
+async def get_exercises(user: bot.User = Depends(get_current_user)):
+    exercises = (
+        supabase.table(table_prefix + "exercises")
+        .select("*")
+        .eq("language", user.language)
+        .is_("user_id", 'null')
+        .execute()
+        .data
+    )
+    # Get all done exercises
+    done_exercises = (
+        supabase.table(table_prefix + "finished_exercises")
+        .select("*")
+        .eq("user_id", user.user_id)
+        .execute()
+        .data
+    )
+    
 
 
 @click.command()

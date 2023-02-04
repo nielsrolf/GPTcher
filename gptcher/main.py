@@ -264,6 +264,10 @@ class WelcomeUser(ConversationState):
 
         Returns the welcome message and sets the state to conversation
         """
+        message = MixedLanguageMessage(
+            text=welcome_message, user_id=self.user.user_id, session=self.session
+        )
+        message.to_db()
         await self.user.reply(welcome_message)
         new_conversation = ConversationState(self.user)
         await self.user.enter_state(new_conversation)

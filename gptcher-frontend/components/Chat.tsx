@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import config from '../config';
-import parse from 'html-react-parser';
+import StudentMessage from '../components/StudentMessage';
+import TeacherMessage from '../components/TeacherMessage';
 
 
 
@@ -46,7 +47,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
       body: JSON.stringify({ text }),
     });
     const data = await response.json();
-    setMessages([...messages, userMessage, ...data]);
+    setMessages([...messages, ...data]);
     setText('');
   };
 
@@ -67,16 +68,13 @@ const Chat: React.FC = ({ session, supabase }: any) => {
     // Add event listener for new messages here
   }, [messages]);
 
+  console.log(messages);
   return (
     <div className="chat-container">
       <button onClick={clearChat}>Clear chat</button>
       <div className="messages-container">
         {messages.map((message) => (
-          <div key={message.id} className={`message-container ${message.sender === 'Teacher' ? 'teacher-message' : 'student-message'}`}>
-            <div>
-                {parse(message.text.replace('</b>', '</b><hr>'))}
-            </div>
-          </div>
+            message.sender === 'Student' ? <StudentMessage message={message} /> : <TeacherMessage message={message} />
         ))}
       </div>
       <div className="input-container" ref={chatEndRef}>
