@@ -34,10 +34,10 @@ const DemoCarousel = () => {
                     <img src="screen1.png" className="image-rounded" alt="image1" />
                 </div>
                 <div>
-                    <img src="screen1.png" className="image-rounded" alt="image2" />
+                    <img src="intro_converse.png" className="image-rounded" alt="image2" />
                 </div>
                 <div>
-                    <img src="screen1.png" className="image-rounded" alt="image3" />
+                    <img src="exercises2.png" className="image-rounded" alt="image3" />
                 </div>
             </Carousel>
         );
@@ -48,10 +48,10 @@ const DemoCarousel = () => {
                     <img src="screen1.png" className="image-rounded" alt="image1" />
                 </div>
                 <div>
-                    <img src="screen1.png" className="image-rounded" alt="image2" />
+                    <img src="intro_converse.png" className="image-rounded" alt="image2" />
                 </div>
                 <div>
-                    <img src="screen1.png" className="image-rounded" alt="image3" />
+                    <img src="exercises2.png" className="image-rounded" alt="image3" />
                 </div>
             </div>
         );

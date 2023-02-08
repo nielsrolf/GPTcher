@@ -6,8 +6,6 @@ const About = () => {
   const session = useSession()
   const supabase = useSupabaseClient()
 
-  console.log({ session, supabase })
-
   return (
     <div>
       <Starfield />
