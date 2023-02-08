@@ -13,8 +13,8 @@ const Starfield = () => {
       star.style.left = Math.random() * 98 + "%";
       star.style.width = Math.random() * 2 + 1 + "px";
       star.style.height = star.style.width;
-      star.style.opacity = Math.random();
-      starfield.appendChild(star);
+      star.style.opacity = String(Math.random());
+      starfield?.appendChild(star);
       
       // setTimeout(() => {
       //   star.style.opacity = 0;
