@@ -36,7 +36,7 @@ const Home = () => {
           <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} theme="dark" />
         </div>
       ) : (
-        <Chat session={session} />
+        <Chat access_token={session.access_token} />
       )}
     </div>
     </div>

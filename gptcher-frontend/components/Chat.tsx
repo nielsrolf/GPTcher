@@ -8,9 +8,12 @@ import SendIcon from '@mui/icons-material/Send';
 import Stack from '@mui/material/Stack';
 
 
+interface ChatProps {
+  access_token: string;
+}
 
 
-const Chat: React.FC = ({ session, supabase }: any) => {
+const Chat: React.FC<ChatProps> = ({ access_token }) => {
   const [messages, setMessages] = useState<{ id: string, text: string, sender: string, text_en: string, text_translated: string, voice: string, created_at: string, session: string, evaluation: any, user_id: string }[]>([]);
   const [text, setText] = useState('');
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
@@ -28,10 +31,10 @@ const Chat: React.FC = ({ session, supabase }: any) => {
   
   useEffect(() => {
     async function fetchChatHistory() {
-        console.log(session.access_token)
+        console.log(access_token)
       const response = await fetch(`${config.backendUrl}/chat`, {
         headers: {
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${access_token}`,
             'Content-Type': 'application/json'
         }});
       const data = await response.json();
@@ -68,7 +71,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
     const response =await fetch(`${config.backendUrl}/chat`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${access_token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ text }),
@@ -96,7 +99,7 @@ const Chat: React.FC = ({ session, supabase }: any) => {
     setMessages([]);
     const response = await fetch(`${config.backendUrl}/clearchat`, {
       headers: {
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${access_token}`,
         'Content-Type': 'application/json'
     }});
     const data = await response.json();
