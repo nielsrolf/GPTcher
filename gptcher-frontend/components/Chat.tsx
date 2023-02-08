@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack';
 
 
 const Chat: React.FC = ({ session, supabase }: any) => {
-  const [messages, setMessages] = useState<{ id: string, text: string, sender: string, text_en: string, text_translated: string, voice: string, created_at: string }[]>([]);
+  const [messages, setMessages] = useState<{ id: string, text: string, sender: string, text_en: string, text_translated: string, voice: string, created_at: string, session: string, evaluation: any, user_id: string }[]>([]);
   const [text, setText] = useState('');
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
 
