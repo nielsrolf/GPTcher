@@ -2,7 +2,7 @@ import React from 'react';
 import parse from 'html-react-parser';
 
 
-const TeacherMessage = React.forwardRef<HTMLDivElement, { message: Any }>((props, ref) => {
+const TeacherMessage = React.forwardRef<HTMLDivElement, { message: { id: string, text: string, sender: string, text_en: string, text_translated: string, voice: string, created_at: string, session: string, evaluation: any, user_id: string } }>((props, ref) => {
     const { message } = props;
     return (
         <div key={message.id} className='teacher-msg-outer'>
