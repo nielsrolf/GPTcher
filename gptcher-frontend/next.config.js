@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 module.exports = {
   eslint: {
     // Warning: This allows production builds to successfully complete even if
@@ -6,4 +5,3 @@ module.exports = {
     ignoreDuringBuilds: true,
   },
 }
-module.exports = nextConfig
