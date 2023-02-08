@@ -21,7 +21,7 @@ const Menu = ({ session, supabase }: any) => {
           <Link href="/chat" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             Chat
           </Link>
-          <Link href="/training" className={menuOpen ? 'menu-open' : 'menu-closed'}>
+          <Link href="/exercises" className={menuOpen ? 'menu-open' : 'menu-closed'}>
             Exercises
           </Link>
           <Link href="/about" className={menuOpen ? 'menu-open' : 'menu-closed'}>
