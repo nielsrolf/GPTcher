@@ -51,7 +51,14 @@ const Chat: React.FC = ({ session, supabase }: any) => {
     const userMessage = {
         'text': text,
         'sender': 'Student',
-        'id': Math.random()
+        'id': String(Math.random()),
+        'text_en': '',
+        'text_translated': '',
+        'voice': '',
+        'created_at': '',
+        'session': '',
+        'evaluation': '',
+        'user_id': ''
     }
     setMessages([...messages, userMessage]);
     if(lastMessageRef.current){
