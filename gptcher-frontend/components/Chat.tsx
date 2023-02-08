@@ -16,8 +16,12 @@ const Chat: React.FC = ({ session, supabase }: any) => {
   const lastMessageRef = useRef(null);
 
   useEffect(() => {
-    if (lastMessageRef.current) {
-      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    try {
+      if (lastMessageRef.current) {
+        lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    } catch (error) {
+      console.log(error);
     }
   }, [messages]);
   
@@ -31,8 +35,12 @@ const Chat: React.FC = ({ session, supabase }: any) => {
         }});
       const data = await response.json();
       setMessages(data);
-      if(lastMessageRef.current){
-        lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      try {
+        if (lastMessageRef.current) {
+          lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (error) {
+        console.log(error);
       }
     }
     fetchChatHistory();
