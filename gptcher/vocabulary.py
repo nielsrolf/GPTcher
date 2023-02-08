@@ -3,28 +3,9 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 
-from gptcher.utils import measure_time, supabase
-from gptcher.language_codes import code_of
-
-load_dotenv(override=True)
-from google.cloud import translate_v2 as translate
-
-
-@measure_time
-def translate_text(target, text):
-    """Translates text into the target language.
-
-    Target must be an ISO 639-1 language code.
-    See https://g.co/cloud/translate/v2/translate-reference#supported_languages
-    """
-    print(f"Translating {text} to {target}...")
-    if len(target) < 4:
-        target = code_of[target]
-    translate_client = translate.Client()
-    # Text can also be a sequence of strings, in which case this method
-    # will return a sequence of results for each text.
-    result = translate_client.translate(text, target_language=target)
-    return result["translatedText"]
+from gptcher.gpt_client import measure_time, supabase
+from gptcher.translation import translate
+from gptcher.settings import table_prefix
 
 
 class Word:
@@ -46,16 +27,6 @@ class Word:
         self.showed = showed
         self.to_learn = to_learn
         self.target_language = target_language
-        # if percentage is None:
-        #     try:
-        #         self.percentage = (
-        #             dictionary_en.loc[dictionary_en.word == self.word_en].iloc[0].usage
-        #         )
-        #     except IndexError:
-        #         print(f"Word {self.word_en} not found in English vocabulary")
-        #         self.percentage = 0
-        # else:
-        #     self.percentage = percentage
 
     @property
     def word_translated(self):
@@ -63,7 +34,7 @@ class Word:
 
     @staticmethod
     def from_word(word_en, target_language, to_learn=False):
-        word_translated = translate_text(target_language, word_en)
+        word_translated = translate(target_language, word_en)
         return Word(word_en, target_language, word_translated, to_learn)
 
     @staticmethod
@@ -138,7 +109,7 @@ class Vocabulary:
 
     def to_db(self):
         """Save the db to supabase"""
-        supabase.table("users").update({"words": self.to_dict()}).eq(
+        supabase.table(table_prefix + "users").update({"words": self.to_dict()}).eq(
             "user_id", self.user.user_id
         ).execute()
 

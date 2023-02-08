@@ -13,18 +13,10 @@ from telegram.ext import (
 )
 
 from gptcher import bot
-from gptcher.main import ConversationState, VocabTrainingState
+from gptcher.main import ConversationState, VocabTrainingState, WelcomeUser
 from gptcher.language_codes import code_of
-from gptcher.utils import measure_time, print_times
-
-load_dotenv(override=True)
-is_prod = os.getenv("IS_PROD") == "True"
-if is_prod:
-    print("Running in production mode")
-    token = os.getenv("TELEGRAM_TOKEN_PROD")
-else:
-    print("Running in development mode")
-    token = os.getenv("TELEGRAM_TOKEN_DEV")
+from gptcher.gpt_client import measure_time, print_times
+from gptcher.settings import token
 
 
 async def hello(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -67,7 +59,7 @@ async def respond(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
     await bot.respond(
         str(update.effective_chat.id), update.message.text, voice_url=voice_url, reply_func=reply_func
@@ -90,9 +82,9 @@ async def start_vocab(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
-    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
+    user = bot.User(str(update.effective_chat.id) , reply_func=reply_func)
     new_conversation = VocabTrainingState(user)
     await user.enter_state(new_conversation)
 
@@ -106,10 +98,26 @@ async def start_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
-    user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
+    user = bot.User(str(update.effective_chat.id) , reply_func=reply_func)
     new_conversation = ConversationState(user)
+    await user.enter_state(new_conversation)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
+
+    user = bot.User(str(update.effective_chat.id) , reply_func=reply_func)
+    new_conversation = WelcomeUser(user)
     await user.enter_state(new_conversation)
 
 
@@ -124,7 +132,7 @@ async def start_exercise_conversation(
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
 
     await bot.start_exercise(str(update.effective_chat.id), reply_func=reply_func)
 
@@ -139,35 +147,6 @@ def speech_recognition_api_request(file_url, language_code):
     }
     out = banana.run(banana_api_key, model_key, model_payload)
     return out['modelOutputs'][0]['transcription'].strip()
-
-
-# async def speech(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     # Get the update object and extract the message and file_id
-#     update = update
-#     message = update.message
-#     file_id = message.voice.file_id
-#     # Use the bot to get the file object
-#     file = await context.bot.get_file(file_id)
-
-#     # Get the user
-
-#     async def reply_func(text):
-#         print(f"Bot: {text}\n")
-#         if text.startswith("http"):
-#             await context.bot.send_voice(
-#                 chat_id=update.effective_chat.id,
-#                 voice=text,
-#             )
-#         else:
-#             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-#     user = bot.User(str(update.effective_chat.id) + "tmp4", reply_func=reply_func)
-#     # Get the text from the audio file
-#     text = speech_recognition_api_request(file.file_path, code_of[user.language])
-#     await user.reply(f"Understood: {text}")
-#     print_times()
-#     # Reply
-#     update.message.text = text
-#     await respond(update, context)
 
 
 async def show_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -191,15 +170,29 @@ async def set_german(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 voice=text,
             )
         else:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
     
     await bot.change_language(str(update.effective_chat.id), "German", reply_func=reply_func)
+
+
+async def set_spanish(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def reply_func(text):
+        print(f"Bot: {text}\n")
+        if text.startswith("http"):
+            await context.bot.send_voice(
+                chat_id=update.effective_chat.id,
+                voice=text,
+            )
+        else:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode='html')
+    
+    await bot.change_language(str(update.effective_chat.id), "Spanish", reply_func=reply_func)
 
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("hello", hello))
-    app.add_handler(CommandHandler("start", respond))
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("donate", donate))
     app.add_handler(CommandHandler("train", start_exercise_conversation))
     app.add_handler(CommandHandler("vocab", start_vocab))
@@ -207,9 +200,11 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("help", show_help))
     app.add_handler(CommandHandler("german", set_german))
     app.add_handler(CommandHandler("deutsch", set_german))
+    app.add_handler(CommandHandler("spanish", set_spanish))
+    app.add_handler(CommandHandler("espanol", set_spanish))
+
 
     app.add_handler(MessageHandler(filters.VOICE, respond))
-
     teach_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), respond)
     app.add_handler(teach_handler)
     app.run_polling()

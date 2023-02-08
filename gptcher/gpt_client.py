@@ -5,6 +5,8 @@ import os
 import openai
 from dotenv import load_dotenv
 from supabase import create_client
+from gptcher.settings import table_prefix
+
 
 load_dotenv(override=True)
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -40,6 +42,7 @@ def print_times():
 
 def complete_without_hash(prompt, stop, max_tokens=256):
     # print("Prompt:\n\n", prompt, "\n\nStop:", stop, "max tokens", max_tokens, "\n\n")
+    print("Prompt:\n\n", prompt)
     response = openai.Completion.create(
         model="text-davinci-003",
         prompt=prompt,

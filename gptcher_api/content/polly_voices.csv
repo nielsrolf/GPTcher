@@ -1,0 +1,217 @@
+Language and language variants,Language code,Name/ID,Gender,Neural Voice,Standard Voice
+Arabic,arb,Zeina,Female,No,Yes
+Arabic (Gulf),ar-AE,Hala,Female,Yes,No
+Catalan,ca-ES,Arlet,Female,Yes,No
+Chinese (Cantonese),yue-CN,Hiujin,Female,Yes,No
+Chinese (Mandarin),cmn-CN,Zhiyu,Female,Yes,Yes
+Danish,da-DK,"Naja
+Mads","Female
+Male","No
+No","Yes
+Yes"
+Dutch,nl-NL,"Laura
+Lotte
+Ruben","Female
+Female
+Male","Yes
+No
+No","No
+Yes
+Yes"
+English (Australian),en-AU,"Nicole
+Olivia
+Russell","Female
+Female
+Male","No
+Yes
+No","Yes
+No
+Yes"
+English (British),en-GB,"Amy**
+Emma
+Brian
+Arthur","Female
+Female
+Male
+Male","Yes
+Yes
+Yes
+Yes","Yes
+Yes
+Yes
+No"
+English (Indian),en-IN,"Aditi*
+Raveena
+Kajal*","Female
+Female
+Female","No
+No
+Yes","Yes
+Yes
+No"
+English (New Zealand),en-NZ,Aria,Female,Yes,No
+English (South African),en-ZA,Ayanda,Female,Yes,No
+English (US),en-US,"Ivy
+Joanna**
+Kendra
+Kimberly
+Salli
+Joey
+Justin
+Kevin
+Matthew**","Female (child)
+Female
+Female
+Female
+Female
+Male
+Male (child)
+Male (child)
+Male","Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes","Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+Yes
+No
+Yes"
+English (Welsh),en-GB-WLS,Geraint,Male,No,Yes
+Finnish,fi-FI,Suvi,Female,Yes,No
+French,fr-FR,"Céline/Celine
+Léa
+Mathieu","Female
+Female
+Male","No
+Yes
+No","Yes
+Yes
+Yes"
+French (Canadian),fr-CA,"Chantal
+Gabrielle
+Liam","Female
+Female
+Male","No
+Yes
+Yes","Yes
+No
+No"
+German,de-DE,"Marlene
+Vicki
+Hans
+Daniel","Female
+Female
+Male
+Male","No
+Yes
+No
+Yes","Yes
+Yes
+Yes
+No"
+German (Austrian),de-AT,Hannah,Female,Yes,No
+Hindi,hi-IN,"Aditi*
+Kajal*","Female
+Female","No
+Yes","Yes
+No"
+Icelandic,is-IS,"Dóra/Dora
+Karl","Female
+Male","No
+No","Yes
+Yes"
+Italian,it-IT,"Carla
+Bianca
+Giorgio","Female
+Female
+Male","No
+Yes
+No","Yes
+Yes
+Yes"
+Japanese,ja-JP,"Mizuki
+Takumi","Female
+Male","No
+Yes","Yes
+Yes"
+Korean,ko-KR,Seoyeon,Female,Yes,Yes
+Norwegian,nb-NO,"Liv
+Ida","Female
+Female","No
+Yes","Yes
+No"
+Polish,pl-PL,"Ewa
+Maja
+Jacek
+Jan
+Ola","Female
+Female
+Male
+Male
+Female","No
+No
+No
+No
+Yes","Yes
+Yes
+Yes
+Yes
+No"
+Portuguese (Brazilian),pt-BR,"Camila
+Vitória/Vitoria
+Ricardo","Female
+Female
+Male","Yes
+Yes
+No","Yes
+Yes
+Yes"
+Portuguese (European),pt-PT,"Inês/Ines
+Cristiano","Female
+Male","Yes
+No","Yes
+Yes"
+Romanian,ro-RO,Carmen,Female,No,Yes
+Russian,ru-RU,"Tatyana
+Maxim","Female
+Male","No
+No","Yes
+Yes"
+Spanish (European),es-ES,"Conchita
+Lucia
+Enrique","Female
+Female
+Male","No
+Yes
+No","Yes
+Yes
+Yes"
+Spanish (Mexican),es-MX,Mia,Female,Yes,Yes
+Spanish (US),es-US,"Lupe**
+Penélope/Penelope
+Miguel
+Pedro","Female
+Female
+Male
+Male","Yes
+No
+No
+Yes","Yes
+Yes
+Yes
+No"
+Swedish,sv-SE,"Astrid
+Elin","Female
+Female","No
+Yes","Yes
+No"
+Turkish,tr-TR,Filiz,Female,No,Yes
+Welsh,cy-GB,Gwyneth,Female,No,
