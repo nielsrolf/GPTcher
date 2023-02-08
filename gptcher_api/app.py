@@ -7,7 +7,7 @@ app = cdk.App()
 CdkStack(
     app,
     "gptcher_api-stack",
-    env=cdk.Environment(account="your-account-here", region="us-east-1"),
+    env=cdk.Environment(account="802148339218", region="eu-central-1"),
 )
 
 app.synth()

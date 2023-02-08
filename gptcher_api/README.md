@@ -11,32 +11,3 @@ brew install pre-commit
 pre-commit install -t pre-commit
 ```
 2. Add your jwt secret to `.env`
-
-### Start the server:
-```
-python rest_pollen/main.py
-```
-
-### Working with Docker
-Build the image
-```
-docker build -t rest .
-```
-Start the dockererized backend:
-```
-docker run -p 5000:5000 --env-file .env rest
-```
-
-### Sending requests
-```
-python test/client.py
-```
-
-### Testing
-```
-pytest test --cov
-```
-
-### API docs
-Start a server, then open the [openapi docs](http://localhost:5000/openapi.json). Can be viewed in [swagger editor](https://editor.swagger.io/).
-

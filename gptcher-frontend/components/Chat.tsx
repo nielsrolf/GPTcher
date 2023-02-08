@@ -11,19 +11,20 @@ import Stack from '@mui/material/Stack';
 
 
 const Chat: React.FC = ({ session, supabase }: any) => {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<{ id: string, text: string, sender: string, text_en: string, text_translated: string, voice: string, created_at: string }[]>([]);
   const [text, setText] = useState('');
-  const lastMessageRef = useRef(null);
+  const lastMessageRef = useRef<HTMLDivElement | null>(null);
 
-  // useEffect(() => {
-  //   try {
-  //     if (lastMessageRef.current) {
-  //       lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }, [messages]);
+
+  useEffect(() => {
+    try {
+      if (lastMessageRef.current) {
+        lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }, [messages]);
   
   useEffect(() => {
     async function fetchChatHistory() {
@@ -35,13 +36,13 @@ const Chat: React.FC = ({ session, supabase }: any) => {
         }});
       const data = await response.json();
       setMessages(data);
-      // try {
-      //   if (lastMessageRef.current) {
-      //     lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
-      //   }
-      // } catch (error) {
-      //   console.log(error);
-      // }
+      try {
+        if (lastMessageRef.current) {
+          lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+      } catch (error) {
+        console.log(error);
+      }
     }
     fetchChatHistory();
   }, []);

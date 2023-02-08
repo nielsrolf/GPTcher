@@ -50,7 +50,7 @@ async def root():
 async def send_message(
     message: Message, user: TokenPayload = Depends(get_current_user)
 ) -> List[Message]:
-    await user.state.respond(message)
+    await user.state.respond(message.text, voice_url=None)
     # get student message and append to the beginning
     student_message = [i for i in user.state.messages if i.sender == 'Student'][-1]
     user.new_messages.insert(0, Message(**student_message.__dict__))

@@ -7,8 +7,12 @@ from aws_cdk import aws_elasticloadbalancingv2 as elb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_secretsmanager as sm
 from constructs import Construct
+import os
+from dotenv import load_dotenv
 
-certificate_arn = "arn:aws:acm:us-east-1:614871946825:certificate/49806058-fc9a-4b90-9caa-fcaaf8e4496d"
+load_dotenv(override=True)
+
+certificate_arn = "arn:aws:acm:eu-central-1:802148339218:certificate/76f01897-cc04-4c79-b935-0a616370816d"
 
 
 class CdkStack(Stack):
@@ -42,7 +46,7 @@ class CdkStack(Stack):
         # Create ECS pattern for the ECS Cluster
         cluster = ecs_patterns.ApplicationLoadBalancedFargateService(  # noqa
             self,
-            "pollen-rest-api",
+            "gptcher-api",
             vpc=vpc,
             public_load_balancer=True,
             protocol=elb.ApplicationProtocol.HTTPS,
@@ -56,19 +60,15 @@ class CdkStack(Stack):
                     "DEBUG": "True",
                     "LOG_LEVEL": "DEBUG",
                     "LOG_FORMAT": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    "SUPABASE_URL": os.environ["SUPABASE_URL"],
+                    "SUPABASE_KEY": os.environ["SUPABASE_KEY"],
+                    "JWT_SECRET": os.environ["JWT_SECRET"]
                 },
-                secrets={
-                    "JWT_SECRET": ecs.Secret.from_secrets_manager(
-                        sm.Secret.from_secret_attributes(
-                            self,
-                            "secret_key",
-                            secret_complete_arn="arn:aws:secretsmanager:us-east-1:614871946825:secret:token-secret-key-zK8E2a",
-                        )
-                    )
-                },
-                # add permission to get SQS queue url and send messages to SQS queue
                 task_role=role,
             ),
             memory_limit_mib=1024,
             cpu=256,
         )  # noqa: F841
+
+
+        
