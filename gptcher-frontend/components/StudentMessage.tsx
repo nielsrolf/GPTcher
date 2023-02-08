@@ -1,11 +1,13 @@
+import React from 'react';
 import parse from 'html-react-parser';
 
 
-const TeacherMessage = ({message}: Any) => {
+const StudentMessage = React.forwardRef<HTMLDivElement, { message: Any }>((props, ref) => {
+    const { message } = props;
     return (
         <div key={message.id} className='teacher-msg-outer'>
             <img src="/Icon_YOU.svg" alt="GPTcher Logo" style={{float: 'right', width: '50px', padding: '5px'}} />
-            <div key={message.id} className='message-container student-message'>
+            <div key={message.id} className='message-container student-message' ref={ref}>
                 <div>
                     {parse(message.text.replace('</b>', '</b><hr>'))}
                 </div>
@@ -19,7 +21,7 @@ const TeacherMessage = ({message}: Any) => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+});
 
-export default TeacherMessage;
+export default StudentMessage;

@@ -50,9 +50,7 @@ async def root():
 async def send_message(
     message: Message, user: TokenPayload = Depends(get_current_user)
 ) -> List[Message]:
-    await bot.respond(
-        user.user_id, message.text, voice_url=None, reply_func=user.reply
-    )
+    await user.state.respond(message)
     # get student message and append to the beginning
     student_message = [i for i in user.state.messages if i.sender == 'Student'][-1]
     user.new_messages.insert(0, Message(**student_message.__dict__))
@@ -76,9 +74,7 @@ async def get_history(
         Message(**i.__dict__) for i in user.state.messages
     ]
     if len(messages) == 0:
-        await bot.respond(
-            user.user_id, '/start', voice_url=None, reply_func=user.reply
-        )
+        await user.state.respond("/start")
         messages = user.new_messages
     return messages
 

@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import config from '../config';
 import StudentMessage from '../components/StudentMessage';
 import TeacherMessage from '../components/TeacherMessage';
+import Button from '@mui/material/Button';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SendIcon from '@mui/icons-material/Send';
+import Stack from '@mui/material/Stack';
 
 
 
@@ -9,11 +13,13 @@ import TeacherMessage from '../components/TeacherMessage';
 const Chat: React.FC = ({ session, supabase }: any) => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
-  const chatEndRef = useRef(null);
+  const lastMessageRef = useRef(null);
 
   useEffect(() => {
-    chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
   
   useEffect(() => {
     async function fetchChatHistory() {
@@ -25,7 +31,9 @@ const Chat: React.FC = ({ session, supabase }: any) => {
         }});
       const data = await response.json();
       setMessages(data);
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      if(lastMessageRef.current){
+        lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      }
     }
     fetchChatHistory();
   }, []);
@@ -37,6 +45,9 @@ const Chat: React.FC = ({ session, supabase }: any) => {
         'id': Math.random()
     }
     setMessages([...messages, userMessage]);
+    if(lastMessageRef.current){
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
     setText('')
     const response =await fetch(`${config.backendUrl}/chat`, {
       method: 'POST',
@@ -51,7 +62,22 @@ const Chat: React.FC = ({ session, supabase }: any) => {
     setText('');
   };
 
+  /* Key listener: on enter send message */
+  useEffect(() => {
+    const handleKeyDown = (event: any) => {
+      if (event.key === 'Enter') {
+        handleSendMessage();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [text]);
+
+
   const clearChat = async () => {
+    setMessages([]);
     const response = await fetch(`${config.backendUrl}/clearchat`, {
       headers: {
         Authorization: `Bearer ${session.access_token}`,
@@ -71,15 +97,24 @@ const Chat: React.FC = ({ session, supabase }: any) => {
   console.log(messages);
   return (
     <div className="chat-container">
-      <button onClick={clearChat}>Clear chat</button>
       <div className="messages-container">
-        {messages.map((message) => (
-            message.sender === 'Student' ? <StudentMessage message={message} /> : <TeacherMessage message={message} />
-        ))}
+      {messages.map((message, index) => (
+          message.sender === 'Student'
+            ? <StudentMessage key={index} message={message} />
+            : <TeacherMessage key={index} message={message} ref={index === messages.length - 1 ? lastMessageRef : null} />
+      ))}
       </div>
-      <div className="input-container" ref={chatEndRef}>
+
+      <div className="input-container">
+        <Button variant="outlined" startIcon={<DeleteIcon />} onClick={clearChat}>
+          Delete
+        </Button>
         <textarea className="input-text-area" value={text} onChange={(e) => setText(e.target.value)} />
-        <button onClick={handleSendMessage}>Send</button>
+        {/* <button onClick={handleSendMessage}>Send</button>
+        <DeleteForeverIcon onClick={clearChat} /> */}
+        <Button variant="contained" endIcon={<SendIcon />} onClick={handleSendMessage}>
+          Send
+        </Button>
       </div>
     </div>
   );

@@ -16,13 +16,13 @@ const Starfield = () => {
       star.style.opacity = Math.random();
       starfield.appendChild(star);
       
-      setTimeout(() => {
-        star.style.opacity = 0;
-        setTimeout(() => {
-          star.remove();
-          generateStar();
-        }, 500);
-      }, Math.random() * 100000);
+      // setTimeout(() => {
+      //   star.style.opacity = 0;
+      //   setTimeout(() => {
+      //     star.remove();
+      //     generateStar();
+      //   }, 500);
+      // }, Math.random() * 100000);
     }
 
     for (let i = 0; i < 1000; i++) {

@@ -160,6 +160,8 @@ nav button {
   justify-content: space-between;
   background-color: rgba(255, 255, 255, 0.3);
   font-family: Arial, Helvetica, sans-serif;
+  padding-bottom: 75px;
+
 }
 
 p {
@@ -189,14 +191,25 @@ p {
   margin-left: 20px;
 }
 
+
 .input-container {
+  /*Fixed position at the bottom of the screen, centered, same width as chat container, centered children */
+  position: fixed;
+  bottom: 0px;
+  width: calc(min(80vw, 1000px));
+  /* border-radius: 10px; */
+  min-height: 75px;
   display: flex;
-  flex-direction: column;
-  width: 100%;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
 }
+
 
 .input-text-area {
   border-radius: 10px;
+  width: calc(min(80vw, 1000px));
+  padding: 5px;
 }
 /* 
 .chat-container {
