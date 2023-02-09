@@ -108,7 +108,13 @@ class User:
             self.state = STATES[session["type"]](self, session["id"], session["context"])
         except:
             self.enter_state(ConversationState(self))
-
+    
+    def return_to_old_session(self, session):
+        self.state = STATES[session["type"]](self, session["id"], session["context"])
+        # save to db
+        supabase.table(table_prefix + "users").update({"session": session["id"]}).eq(
+            "user_id", self.user_id
+        ).execute()
 
     async def enter_state(self, state):
         """Set the state of the user.

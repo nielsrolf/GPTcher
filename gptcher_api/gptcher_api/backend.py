@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Union
 from gptcher import bot
-from gptcher.main import ConversationState, WelcomeUser
+from gptcher.main import STATES, ConversationState, WelcomeUser, ExerciseState
 
 from gptcher_api.authentication import TokenPayload, get_current_user
 from gptcher_api.db_client import supabase
@@ -41,11 +41,6 @@ async def root():
     return {"healthy": "yes"}
 
 
-# @app.get("/user")
-# async def whoami(user: TokenPayload = Depends(get_current_user)):
-#     return user
-
-
 @app.post("/chat")
 async def send_message(
     message: Message, user: TokenPayload = Depends(get_current_user)
@@ -77,6 +72,70 @@ async def get_history(
         await user.state.respond("/start")
         messages = user.new_messages
     return messages
+
+
+# GET /exercises/:id
+@app.get("/exercise/{exercise_id}")
+async def get_exercise(exercise_id: str, user: bot.User = Depends(get_current_user)):
+    """Endpoint to initialize a new exercise session and return the session id"""
+    state = ExerciseState(
+        user, context={"exercise_id": exercise_id}
+    )
+    supabase.table(table_prefix + "session").upsert(
+        {
+            "id": state.session,
+            "type": state.__class__.__name__,
+            "user_id": user.user_id,
+            "context": state.context,
+        }
+    ).execute()
+    await state.start()
+    supabase.table(table_prefix + "session").update({"context": state.context}).eq(
+        "id", state.session
+    ).execute()
+    return {"session": state.session}
+
+
+@app.get("/session/{session_id}")
+async def get_session_history(
+    session_id: str,
+    user: bot.User = Depends(get_current_user)
+) -> List[Message]:
+    session = (
+        supabase.table(table_prefix + "session")
+        .select("*")
+        .eq("id", session_id)
+        .eq("user_id", user.user_id)
+        .execute()
+        .data[0]
+    )
+    state = STATES[session["type"]](user, session["id"], session["context"])
+    messages = [
+        Message(**i.__dict__) for i in state.messages
+    ]
+    return messages
+
+
+@app.post("/session/{session_id}")
+async def send_message(
+    session_id: str,
+    message: Message,
+    user: TokenPayload = Depends(get_current_user)
+) -> List[Message]:
+    session = (
+        supabase.table(table_prefix + "session")
+        .select("*")
+        .eq("id", session_id)
+        .eq("user_id", user.user_id)
+        .execute()
+        .data[0]
+    )
+    state = STATES[session["type"]](user, session["id"], session["context"])
+    await state.respond(message.text, voice_url=None)
+    # get student message and append to the beginning
+    student_message = [i for i in state.messages if i.sender == 'Student'][-1]
+    user.new_messages.insert(0, Message(**student_message.__dict__))
+    return user.new_messages
 
 
 @app.get("/exercises/new")

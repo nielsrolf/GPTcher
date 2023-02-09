@@ -15,7 +15,7 @@ const StudentMessage = React.forwardRef<HTMLDivElement, { message: { id: string,
                     <>
                         <hr />
                         <div>
-                            {parse(message.text_translated.replace('</b>', '</b><hr>'))}
+                            {parse(message.text_translated.replace('</b>', '</b><hr>').replace('\n', '<br />'))}
                         </div>
                     </>
                 )}

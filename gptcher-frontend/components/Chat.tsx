@@ -10,14 +10,17 @@ import Stack from '@mui/material/Stack';
 
 interface ChatProps {
   access_token: string;
+  // optional sessionId
+  sessionId?: string;
 }
 
 
-const Chat: React.FC<ChatProps> = ({ access_token }) => {
+const Chat: React.FC<ChatProps> = ({ access_token, sessionId }) => {
   const [messages, setMessages] = useState<{ id: string, text: string, sender: string, text_en: string, text_translated: string, voice: string, created_at: string, session: string, evaluation: any, user_id: string }[]>([]);
   const [text, setText] = useState('');
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
-
+  const endpoint = sessionId ? `/session/${sessionId}` : '/chat';
+  console.log(endpoint)
 
   useEffect(() => {
     try {
@@ -31,8 +34,7 @@ const Chat: React.FC<ChatProps> = ({ access_token }) => {
   
   useEffect(() => {
     async function fetchChatHistory() {
-        console.log(access_token)
-      const response = await fetch(`${config.backendUrl}/chat`, {
+      const response = await fetch(`${config.backendUrl}${endpoint}`, {
         headers: {
             Authorization: `Bearer ${access_token}`,
             'Content-Type': 'application/json'
@@ -68,7 +70,7 @@ const Chat: React.FC<ChatProps> = ({ access_token }) => {
       lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
     }
     setText('')
-    const response =await fetch(`${config.backendUrl}/chat`, {
+    const response =await fetch(`${config.backendUrl}${endpoint}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${access_token}`,
