@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+
 certificate_arn = "arn:aws:acm:eu-central-1:802148339218:certificate/76f01897-cc04-4c79-b935-0a616370816d"
 
 
@@ -37,10 +38,9 @@ class CdkStack(Stack):
             "FargateContainerRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
-        role.add_to_policy(iam.PolicyStatement(actions=["sqs:*"], resources=["*"]))
 
         certificate = certificatemanager.Certificate.from_certificate_arn(
-            self, "pollinationsworker", certificate_arn
+            self, "Certificate", certificate_arn
         )
 
         # Create ECS pattern for the ECS Cluster
@@ -61,8 +61,14 @@ class CdkStack(Stack):
                     "LOG_LEVEL": "DEBUG",
                     "LOG_FORMAT": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                     "SUPABASE_URL": os.environ["SUPABASE_URL"],
-                    "SUPABASE_KEY": os.environ["SUPABASE_KEY"],
-                    "JWT_SECRET": os.environ["JWT_SECRET"]
+                    "SUPABASE_API_KEY": os.environ["SUPABASE_API_KEY"],
+                    "JWT_SECRET": os.environ["JWT_SECRET"],
+                    "BANANA_API_KEY": os.environ["BANANA_API_KEY"],
+                    "DEEPL_API_KEY": os.environ["DEEPL_API_KEY"],
+                    "GOOGLE_APPLICATION_CREDENTIALS": os.environ[
+                        "GOOGLE_APPLICATION_CREDENTIALS"
+                    ],
+                    "OPENAI_API_KEY": os.environ["OPENAI_API_KEY"],
                 },
                 task_role=role,
             ),

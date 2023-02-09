@@ -10,7 +10,7 @@ from gptcher.main import ConversationState, WelcomeUser
 
 from gptcher_api.authentication import TokenPayload, get_current_user
 from gptcher_api.db_client import supabase
-from gptcher_api.schema import Message
+from gptcher_api.schema import Message, Exercise
 from gptcher.settings import is_prod, table_prefix
 
 
@@ -79,7 +79,7 @@ async def get_history(
     return messages
 
 
-@app.get("/exercises")
+@app.get("/exercises/new")
 async def get_exercises(user: bot.User = Depends(get_current_user)):
     exercises = (
         supabase.table(table_prefix + "exercises")
@@ -97,7 +97,76 @@ async def get_exercises(user: bot.User = Depends(get_current_user)):
         .execute()
         .data
     )
-    
+    # Filter out done exercises
+    exercises = [
+        Exercise(**i) for i in exercises if i["id"] not in [j["exercise_id"] for j in done_exercises]
+    ]
+    return exercises
+
+
+@app.get("/exercises/done")
+async def get_exercises(user: bot.User = Depends(get_current_user)):
+    exercises = (
+        supabase.table(table_prefix + "exercises")
+        .select("*")
+        .eq("language", user.language)
+        .is_("user_id", 'null')
+        .execute()
+        .data
+    )
+    # Get all done exercises
+    done_exercises = (
+        supabase.table(table_prefix + "finished_exercises")
+        .select("*")
+        .eq("user_id", user.user_id)
+        .execute()
+        .data
+    )
+    # Filter only done exercises
+    exercises = [
+        Exercise(**i) for i in exercises if i["id"] in [j["exercise_id"] for j in done_exercises]
+    ]
+    return exercises
+
+
+# @app.get("/exercises/continue")
+# async def get_exercises(user: bot.User = Depends(get_current_user)):
+#     exercises = (
+#         supabase.table(table_prefix + "exercises")
+#         .select("*")
+#         .eq("language", user.language)
+#         .is_("user_id", 'null')
+#         .execute()
+#         .data
+#     )
+#     # Get all done exercises
+#     done_exercises = (
+#         supabase.table(table_prefix + "finished_exercises")
+#         .select("*")
+#         .eq("user_id", user.user_id)
+#         .execute()
+#         .data
+#     )
+#     # Get started exercises
+#     started_exercise_sessions = (
+#         supabase.table(table_prefix + "session")
+#         .select("*")
+#         .eq("user_id", user.user_id)
+#         .eq("type", "ExerciseState")
+#         .execute()
+#         .data
+#     )
+#     started_ids = [i["context"]["exercise_id"] for i in started_exercise_sessions]
+#     breakpoint()
+
+#     started_exercises = [
+#         Exercise(**i) for i in exercises if i["id"] in instarted_ids
+#     ]
+#     # Filter out done exercises
+#     exercises = [
+#         i for i in started_exercises if i.id not in [j["exercise_id"] for j in done_exercises]
+#     ]
+#     return exercises
 
 
 @click.command()

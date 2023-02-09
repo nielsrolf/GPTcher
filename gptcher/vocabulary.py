@@ -60,22 +60,22 @@ class Word:
         return f"{self.word_en} - {self.word_translated}"
 
 
-dictionary_en = pd.read_csv("data/words_en_small.csv")
-"""
-> dictionary_en.info()
-<class 'pandas.core.frame.DataFrame'>
-RangeIndex: 333333 entries, 0 to 333332
-Data columns (total 5 columns):
- #   Column  Non-Null Count   Dtype  
----  ------  --------------   -----  
- 0   word    333333 non-null  object 
- 1   count   333333 non-null  int64  
- 2   type    333333 non-null  object 
- 3   usage   333333 non-null  float64
- 4   cumsum  333333 non-null  float64
-dtypes: float64(2), int64(1), object(2)
-memory usage: 12.7+ MB
-"""
+# dictionary_en = pd.read_csv("data/words_en_small.csv")
+# """
+# > dictionary_en.info()
+# <class 'pandas.core.frame.DataFrame'>
+# RangeIndex: 333333 entries, 0 to 333332
+# Data columns (total 5 columns):
+#  #   Column  Non-Null Count   Dtype  
+# ---  ------  --------------   -----  
+#  0   word    333333 non-null  object 
+#  1   count   333333 non-null  int64  
+#  2   type    333333 non-null  object 
+#  3   usage   333333 non-null  float64
+#  4   cumsum  333333 non-null  float64
+# dtypes: float64(2), int64(1), object(2)
+# memory usage: 12.7+ MB
+# """
 
 
 class Vocabulary:
@@ -117,22 +117,22 @@ class Vocabulary:
         """Can tell you 'with this dataset, you understand 85% of the words used in the English language'"""
         return sum([word.percentage for word in self.words.values()])
 
-    def add_most_used_words(self, n, word_type=None):
-        """Adds the n most used words from the english language to the passive vocabulary, with a count of 1
-        If word_type is specified, only words of that type are added"""
-        if word_type:
-            words = dictionary_en[dictionary_en["type"] == word_type]
-        else:
-            words = dictionary_en
-        # Sort the words by usage in descending order
-        words = words.sort_values(by="usage", ascending=False)
+    # def add_most_used_words(self, n, word_type=None):
+    #     """Adds the n most used words from the english language to the passive vocabulary, with a count of 1
+    #     If word_type is specified, only words of that type are added"""
+    #     if word_type:
+    #         words = dictionary_en[dictionary_en["type"] == word_type]
+    #     else:
+    #         words = dictionary_en
+    #     # Sort the words by usage in descending order
+    #     words = words.sort_values(by="usage", ascending=False)
 
-        # Iterate through the top n most used words
-        for i in range(n):
-            # Get the word and usage from the DataFrame
-            word = words.iloc[i]["word"]
-            # Add the word to the passive vocabulary with a count of 1
-            self[word].showed = max(1, self[word].showed)
+    #     # Iterate through the top n most used words
+    #     for i in range(n):
+    #         # Get the word and usage from the DataFrame
+    #         word = words.iloc[i]["word"]
+    #         # Add the word to the passive vocabulary with a count of 1
+    #         self[word].showed = max(1, self[word].showed)
 
     def add_wordpair(self, word_en, translation):
         """Add a word pair to the vocabulary"""
@@ -156,5 +156,4 @@ class Vocabulary:
 
     @property
     def score(self):
-        print("Score: ", {str(word): word.score for word in self.words.values()})
         return round(sum([word.points for word in self.words.values()]) * 10) / 10
