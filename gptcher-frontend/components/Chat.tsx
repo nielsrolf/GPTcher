@@ -115,13 +115,12 @@ const Chat: React.FC<ChatProps> = ({ access_token, sessionId }) => {
     // Add event listener for new messages here
   }, [messages]);
 
-  console.log(messages);
   return (
     <div className="chat-container">
       <div className="messages-container">
       {messages.map((message, index) => (
           message.sender === 'Student'
-            ? <StudentMessage key={index} message={message} />
+            ? <StudentMessage key={index} message={message} isExercise={sessionId!==undefined}/>
             : <TeacherMessage key={index} message={message} ref={index === messages.length - 1 ? lastMessageRef : null} />
       ))}
       </div>

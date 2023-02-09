@@ -36,7 +36,7 @@ const Exercise: React.FC<ExerciseData> = ({
   };
 
   return (
-    <button style={{ width: "100%" }} onClick={handleClick}>
+    <button style={{ width: "100%", padding: "10px", margin: "5px" }} onClick={handleClick}>
       {topic} {grammar ? `- ${grammar}` : ""} ({exercise_number})
     </button>
   );
