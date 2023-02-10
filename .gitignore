@@ -145,3 +145,4 @@ cdk.context.json
 cdk.context.json.lock
 cdk.json
 cdk.json.lock
+default.profraw

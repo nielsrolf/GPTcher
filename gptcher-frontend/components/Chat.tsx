@@ -126,15 +126,17 @@ const Chat: React.FC<ChatProps> = ({ access_token, sessionId }) => {
       </div>
 
       <div className="input-container">
-        <Button variant="outlined" startIcon={<DeleteIcon />} onClick={clearChat}>
-          Delete
-        </Button>
+        {sessionId === undefined && (
+          <button  style={{borderRadius: '5px', marginRight: '5px'}} onClick={clearChat}>
+            <DeleteIcon />
+          </button>
+        )}
         <textarea className="input-text-area" value={text} onChange={(e) => setText(e.target.value)} />
         {/* <button onClick={handleSendMessage}>Send</button>
         <DeleteForeverIcon onClick={clearChat} /> */}
-        <Button variant="contained" endIcon={<SendIcon />} onClick={handleSendMessage}>
-          Send
-        </Button>
+        <button style={{borderRadius: '5px', marginLeft: '5px'}} onClick={handleSendMessage}>
+          <SendIcon />
+        </button>
       </div>
     </div>
   );

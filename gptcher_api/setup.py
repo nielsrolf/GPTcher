@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="rest_pollen",
+    name="gotcher_api",
     version=0.1,
     description="Description here",
     license="Apache 2.0",
