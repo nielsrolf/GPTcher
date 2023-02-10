@@ -6,7 +6,7 @@ from cdk.cdk_stack import CdkStack
 app = cdk.App()
 CdkStack(
     app,
-    "gptcher_api-stack",
+    "gptcher-api",
     env=cdk.Environment(account="802148339218", region="eu-central-1"),
 )
 

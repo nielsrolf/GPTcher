@@ -14,3 +14,15 @@ class Message(BaseModel):
     updated_at: Optional[str] = None
     id: Optional[Union[str, int]] = None
     evaluation: Optional[Dict] = None
+
+
+class Exercise(BaseModel):
+    id: str
+    language: str
+    topic: str
+    content_description: str
+    grammar: Optional[str] = None
+    exercise_number: int
+    task_description: str
+    user_id: Optional[str] = None
+

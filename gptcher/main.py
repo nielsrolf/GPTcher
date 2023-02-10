@@ -362,7 +362,7 @@ class VocabTrainingState(ConversationState):
         await self.start()
 
 
-class ExerciseState:
+class ExerciseState(Session):
     """The state of the conversation flow when the user is translating from English to the target language.
 
     This state is entered when the user sends a message that starts with the command for translating from English to the target language.
@@ -386,7 +386,7 @@ class ExerciseState:
         await self.user.reply(f"Translate or transcribe the next sentences.")
         response = await self.target_to_en(self.exercise.translation_tasks[0])
         message = MixedLanguageMessage(
-            self.exercise.task_description + "\n" + response,
+            f"Translate or transcribe the next sentences. \n\n" + response,
             sender="Teacher",
             session=self.session,
         )
@@ -404,7 +404,6 @@ class ExerciseState:
                 'id': task.id
             }
             for task in self.exercise.translation_tasks]
-        
 
         self.context["todo"] = todos
         self.context["previous"] = {"format": "target_to_en", "id": self.exercise.translation_tasks[0].id}

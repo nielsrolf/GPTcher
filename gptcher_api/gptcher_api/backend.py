@@ -6,11 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Union
 from gptcher import bot
-from gptcher.main import ConversationState, WelcomeUser
+from gptcher.main import STATES, ConversationState, WelcomeUser, ExerciseState
 
 from gptcher_api.authentication import TokenPayload, get_current_user
 from gptcher_api.db_client import supabase
-from gptcher_api.schema import Message
+from gptcher_api.schema import Message, Exercise
 from gptcher.settings import is_prod, table_prefix
 
 
@@ -39,11 +39,6 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"healthy": "yes"}
-
-
-# @app.get("/user")
-# async def whoami(user: TokenPayload = Depends(get_current_user)):
-#     return user
 
 
 @app.post("/chat")
@@ -79,7 +74,71 @@ async def get_history(
     return messages
 
 
-@app.get("/exercises")
+# GET /exercises/:id
+@app.get("/exercise/{exercise_id}")
+async def get_exercise(exercise_id: str, user: bot.User = Depends(get_current_user)):
+    """Endpoint to initialize a new exercise session and return the session id"""
+    state = ExerciseState(
+        user, context={"exercise_id": exercise_id}
+    )
+    supabase.table(table_prefix + "session").upsert(
+        {
+            "id": state.session,
+            "type": state.__class__.__name__,
+            "user_id": user.user_id,
+            "context": state.context,
+        }
+    ).execute()
+    await state.start()
+    supabase.table(table_prefix + "session").update({"context": state.context}).eq(
+        "id", state.session
+    ).execute()
+    return {"session": state.session}
+
+
+@app.get("/session/{session_id}")
+async def get_session_history(
+    session_id: str,
+    user: bot.User = Depends(get_current_user)
+) -> List[Message]:
+    session = (
+        supabase.table(table_prefix + "session")
+        .select("*")
+        .eq("id", session_id)
+        .eq("user_id", user.user_id)
+        .execute()
+        .data[0]
+    )
+    state = STATES[session["type"]](user, session["id"], session["context"])
+    messages = [
+        Message(**i.__dict__) for i in state.messages
+    ]
+    return messages
+
+
+@app.post("/session/{session_id}")
+async def send_message(
+    session_id: str,
+    message: Message,
+    user: TokenPayload = Depends(get_current_user)
+) -> List[Message]:
+    session = (
+        supabase.table(table_prefix + "session")
+        .select("*")
+        .eq("id", session_id)
+        .eq("user_id", user.user_id)
+        .execute()
+        .data[0]
+    )
+    state = STATES[session["type"]](user, session["id"], session["context"])
+    await state.respond(message.text, voice_url=None)
+    # get student message and append to the beginning
+    student_message = [i for i in state.messages if i.sender == 'Student'][-1]
+    user.new_messages.insert(0, Message(**student_message.__dict__))
+    return user.new_messages
+
+
+@app.get("/exercises/new")
 async def get_exercises(user: bot.User = Depends(get_current_user)):
     exercises = (
         supabase.table(table_prefix + "exercises")
@@ -97,7 +156,76 @@ async def get_exercises(user: bot.User = Depends(get_current_user)):
         .execute()
         .data
     )
-    
+    # Filter out done exercises
+    exercises = [
+        Exercise(**i) for i in exercises if i["id"] not in [j["exercise_id"] for j in done_exercises]
+    ]
+    return exercises
+
+
+@app.get("/exercises/done")
+async def get_exercises(user: bot.User = Depends(get_current_user)):
+    exercises = (
+        supabase.table(table_prefix + "exercises")
+        .select("*")
+        .eq("language", user.language)
+        .is_("user_id", 'null')
+        .execute()
+        .data
+    )
+    # Get all done exercises
+    done_exercises = (
+        supabase.table(table_prefix + "finished_exercises")
+        .select("*")
+        .eq("user_id", user.user_id)
+        .execute()
+        .data
+    )
+    # Filter only done exercises
+    exercises = [
+        Exercise(**i) for i in exercises if i["id"] in [j["exercise_id"] for j in done_exercises]
+    ]
+    return exercises
+
+
+# @app.get("/exercises/continue")
+# async def get_exercises(user: bot.User = Depends(get_current_user)):
+#     exercises = (
+#         supabase.table(table_prefix + "exercises")
+#         .select("*")
+#         .eq("language", user.language)
+#         .is_("user_id", 'null')
+#         .execute()
+#         .data
+#     )
+#     # Get all done exercises
+#     done_exercises = (
+#         supabase.table(table_prefix + "finished_exercises")
+#         .select("*")
+#         .eq("user_id", user.user_id)
+#         .execute()
+#         .data
+#     )
+#     # Get started exercises
+#     started_exercise_sessions = (
+#         supabase.table(table_prefix + "session")
+#         .select("*")
+#         .eq("user_id", user.user_id)
+#         .eq("type", "ExerciseState")
+#         .execute()
+#         .data
+#     )
+#     started_ids = [i["context"]["exercise_id"] for i in started_exercise_sessions]
+#     breakpoint()
+
+#     started_exercises = [
+#         Exercise(**i) for i in exercises if i["id"] in instarted_ids
+#     ]
+#     # Filter out done exercises
+#     exercises = [
+#         i for i in started_exercises if i.id not in [j["exercise_id"] for j in done_exercises]
+#     ]
+#     return exercises
 
 
 @click.command()

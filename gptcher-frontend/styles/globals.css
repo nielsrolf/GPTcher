@@ -152,7 +152,7 @@ nav button {
 .chat-container {
   position: absolute;
   top: 100px;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 200px);
   width: calc(min(80vw, 1000px));
   display: flex;
   justify-self: center;
