@@ -1,2 +1,5 @@
 data/
 gptcher-frontend/
+.ipynb_checkpoints/
+gptcher-frontend.ipynb
+cdk.out/
